@@ -1,0 +1,24 @@
+version: '3.9'
+
+services:
+  fastapi-backend:
+    build: .
+    container_name: tweeky-queeky-fastapi
+    ports:
+      - '5000:5000'
+    environment:
+      - PORT=5000
+      - MONGO_URI=${MONGO_URI}
+      - JWT_SECRET=${JWT_SECRET}
+      - PAYPAL_CLIENT_ID=${PAYPAL_CLIENT_ID}
+      - PAYPAL_APP_SECRET=${PAYPAL_APP_SECRET}
+      - PAYPAL_API_URL=${PAYPAL_API_URL:-https://api-m.sandbox.paypal.com}
+      - NODE_ENV=${NODE_ENV:-production}
+      - PAGINATION_LIMIT=${PAGINATION_LIMIT:-12}
+    volumes:
+      - uploads:/app/uploads
+    restart: unless-stopped
+    command: uvicorn main:app --host 0.0.0.0 --port 5000
+
+volumes:
+  uploads:

@@ -49,6 +49,24 @@ PAGINATION_LIMIT=12
 
 ## Running the Application
 
+### With Docker (Recommended)
+
+```bash
+# Build and run with docker-compose
+docker-compose up
+
+# Or build and run in detached mode
+docker-compose up -d
+
+# Stop the container
+docker-compose down
+
+# Rebuild after code changes
+docker-compose up --build
+```
+
+### Without Docker
+
 ```bash
 # Development mode with auto-reload
 uvicorn main:app --reload --port 5000
