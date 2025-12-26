@@ -38,28 +38,20 @@ import logo from '../assets/logo.svg';
 import { resetCart } from '../slices/cartSlice';
 
 const Header = ({ theme = 'light', onToggleTheme }) => {
-  // Access global state from Redux
   const { cartItems } = useSelector((state) => state.cart);
   const { userInfo } = useSelector((state) => state.auth);
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  // React Query mutation for logout
   const { mutate: logoutApiCall } = useLogout();
 
-  /**
-   * Handle user logout
-   * Clears server session, React Query cache, Redux state, and localStorage
-   */
   const logoutHandler = async () => {
     logoutApiCall(
       {},
       {
         onSuccess: () => {
-          // Clear Redux auth state
           dispatch(logout());
-          // Reset cart to prevent data leakage to next user
           dispatch(resetCart());
           navigate('/login');
         },

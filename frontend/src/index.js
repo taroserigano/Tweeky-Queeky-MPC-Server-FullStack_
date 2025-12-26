@@ -36,32 +36,13 @@ import { PayPalScriptProvider } from '@paypal/react-paypal-js';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 
-/**
- * React Query Configuration
- * 
- * Creates a QueryClient instance with optimized defaults for e-commerce app.
- * 
- * Configuration rationale:
- * - staleTime: 5 minutes - Product/order data doesn't change frequently
- * - cacheTime: 30 minutes - Keep cached data longer to reduce API calls
- * - refetchOnWindowFocus: false - Prevents unnecessary refetches when switching tabs
- * - retry: 1 - Fail fast to provide better UX (one retry is enough)
- * 
- * Benefits:
- * - Automatic background refetching when data becomes stale
- * - Intelligent caching reduces server load
- * - Built-in loading and error states
- * - DevTools for debugging in development
- * 
- * @see https://tanstack.com/query/latest/docs/react/guides/important-defaults
- */
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000,      // Data fresh for 5 minutes
-      cacheTime: 30 * 60 * 1000,     // Cache persists for 30 minutes
-      refetchOnWindowFocus: false,   // Don't refetch on tab switch
-      retry: 1,                      // Retry failed requests once
+      staleTime: 5 * 60 * 1000,
+      cacheTime: 30 * 60 * 1000,
+      refetchOnWindowFocus: false,
+      retry: 1,
     },
   },
 });

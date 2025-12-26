@@ -36,42 +36,30 @@ const LoginScreen = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  // React Query mutation for login (server state)
   const { mutate: login, isPending: isLoading } = useLogin();
-
-  // Redux selector for auth state (client state)
   const { userInfo } = useSelector((state) => state.auth);
 
-  // Extract redirect parameter from URL
   const { search } = useLocation();
   const sp = new URLSearchParams(search);
   const redirect = sp.get('redirect') || '/';
 
-  // Redirect if already logged in
   useEffect(() => {
     if (userInfo) {
       navigate(redirect);
     }
   }, [navigate, redirect, userInfo]);
 
-  /**
-   * Handle form submission
-   * Uses React Query mutation with callbacks for success/error handling
-   */
   const submitHandler = async (e) => {
     e.preventDefault();
     
-    // Call React Query mutation with inline callbacks
     login(
       { email, password },
       {
         onSuccess: (res) => {
-          // Store user info in Redux for app-wide access
           dispatch(setCredentials({ ...res }));
           navigate(redirect);
         },
         onError: (err) => {
-          // Display user-friendly error message
           toast.error(err?.response?.data?.detail || err.message);
         },
       }
