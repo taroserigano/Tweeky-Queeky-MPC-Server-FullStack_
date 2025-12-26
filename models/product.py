@@ -1,4 +1,4 @@
-from beanie import Document, PydanticObjectId
+from beanie import Document, PydanticObjectId, Link
 from pydantic import Field, ConfigDict
 from datetime import datetime
 from typing import List, Optional
@@ -25,7 +25,7 @@ class Product(Document):
     brand: str
     category: str
     description: str
-    reviews: List[Review] = Field(default_factory=list)
+    reviews: List[Link[Review]] = Field(default_factory=list)
     rating: float = Field(default=0, ge=0, le=5)
     num_reviews: int = Field(default=0, alias="numReviews")
     price: float = Field(ge=0)

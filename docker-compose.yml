@@ -1,11 +1,11 @@
-version: '3.9'
+version: "3.9"
 
 services:
   mongodb:
     image: mongo:7.0
     container_name: tweeky-mongodb
     ports:
-      - '27017:27017'
+      - "27017:27017"
     environment:
       - MONGO_INITDB_ROOT_USERNAME=admin
       - MONGO_INITDB_ROOT_PASSWORD=adminpassword
@@ -23,23 +23,29 @@ services:
     build: .
     container_name: tweeky-queeky-fastapi
     ports:
-      - '5000:5000'
+      - "5000:5000"
     environment:
       - PORT=5000
-      - MONGO_URI=mongodb://admin:adminpassword@mongodb:27017/tweeky?authSource=admin
+      - MONGO_URI=${MONGO_URI}
       - JWT_SECRET=${JWT_SECRET:-your_jwt_secret_key_change_this}
       - PAYPAL_CLIENT_ID=${PAYPAL_CLIENT_ID}
       - PAYPAL_APP_SECRET=${PAYPAL_APP_SECRET}
       - PAYPAL_API_URL=${PAYPAL_API_URL:-https://api-m.sandbox.paypal.com}
-      - NODE_ENV=${NODE_ENV:-production}
+      - NODE_ENV=development
       - PAGINATION_LIMIT=${PAGINATION_LIMIT:-12}
     volumes:
       - uploads:/app/uploads
-    depends_on:
-      mongodb:
-        condition: service_healthy
     restart: unless-stopped
     command: uvicorn main:app --host 0.0.0.0 --port 5000
+
+  frontend:
+    build: ./frontend
+    container_name: tweeky-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - fastapi-backend
+    restart: unless-stopped
 
 volumes:
   uploads:

@@ -1,38 +1,122 @@
-# FastAPI Backend for Tweeky Queeky Shop
+# 🛒 TweekySqueeky E-Commerce Platform
 
-A complete FastAPI rewrite of the Node.js/Express backend with identical functionality.
+A modern, full-stack e-commerce application built with **FastAPI**, **React**, and **MongoDB**. Features secure payment processing, user authentication, and a responsive admin dashboard.
 
-## Features
+![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi)
+![React](https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB)
+![MongoDB](https://img.shields.io/badge/MongoDB-%234ea94b.svg?style=for-the-badge&logo=mongodb&logoColor=white)
+![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)
 
-- ✅ **User Authentication**: JWT-based auth with HTTP-only cookies
-- ✅ **Product Management**: Full CRUD with pagination, search, and reviews
-- ✅ **Order Processing**: Cart, checkout, PayPal integration
-- ✅ **Admin Panel**: User and product management
-- ✅ **File Upload**: Image upload for products
-- ✅ **MongoDB**: Async ODM with Beanie
+## ✨ Features
 
-## Tech Stack
+### User Features
 
-- **FastAPI** - Modern async web framework
-- **Beanie** - Async MongoDB ODM
-- **Motor** - Async MongoDB driver
-- **Pydantic** - Data validation
-- **PyJWT** - JWT authentication
-- **Passlib** - Password hashing
-- **HTTPX** - Async HTTP client for PayPal
+- 🔐 **Secure Authentication** - JWT-based auth with HTTP-only cookies
+- 🛍️ **Product Browsing** - Search, filter, and pagination
+- ⭐ **Product Reviews** - Rate and review products
+- 🛒 **Shopping Cart** - Add/remove items, calculate totals
+- 💳 **PayPal Integration** - Secure payment processing
+- 📦 **Order Tracking** - View order history and status
 
-## Installation
+### Admin Features
+
+- 👥 **User Management** - View and manage users
+- 📝 **Product Management** - CRUD operations for products
+- 📊 **Order Management** - Process and track orders
+- 🖼️ **Image Upload** - Product image management
+
+## 🏗️ Tech Stack
+
+### Backend
+
+- **FastAPI** - Modern, high-performance Python web framework
+- **Beanie ODM** - Async MongoDB object-document mapper
+- **Pydantic v2** - Data validation and settings management
+- **PyJWT** - JSON Web Token implementation
+- **Passlib** - Secure password hashing
+
+### Frontend
+
+- **React 18** - Modern UI library
+- **Redux Toolkit** - State management
+- **React Bootstrap** - Responsive UI components
+- **React Router v6** - Client-side routing
+
+### Database & Infrastructure
+
+- **MongoDB 7.0** - NoSQL database
+- **Docker & Docker Compose** - Containerization
+- **Nginx** - Reverse proxy and static file serving
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- Docker & Docker Compose
+- Python 3.11+ (for local development)
+- Node.js 18+ (for frontend development)
+
+### Run with Docker (Recommended)
 
 ```bash
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+# Clone the repository
+git clone <repository-url>
+cd TweekySqueeky-FastAPI-Ecommer-App
 
-# Install dependencies
-pip install -r requirements.txt
+# Create environment file
+cp .env.example .env
+# Edit .env with your credentials
+
+# Start all services (Frontend, Backend, MongoDB)
+docker-compose up -d --build
+
+# Seed database with sample data
+docker exec tweeky-queeky-fastapi python seeder.py
+
+# Access the application
+# Frontend: http://localhost:3000
+# Backend API: http://localhost:5000
+# API Docs: http://localhost:5000/docs
 ```
 
-## Environment Variables
+### Local Development
+
+```bash
+# Backend
+python -m venv .venv
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn main:app --reload --port 5000
+
+# Frontend (separate terminal)
+cd frontend
+npm install
+npm start
+```
+
+## 📁 Project Structure
+
+```
+├── config/              # Configuration and database setup
+├── middleware/          # Authentication middleware
+├── models/             # MongoDB models (User, Product, Order)
+├── routers/            # API route handlers
+├── schemas/            # Pydantic schemas for validation
+├── utils/              # Utility functions (JWT, PayPal, etc.)
+├── tests/              # Comprehensive test suite
+├── frontend/           # React application
+│   ├── src/
+│   │   ├── components/ # React components
+│   │   ├── screens/    # Page components
+│   │   └── slices/     # Redux slices
+│   ├── Dockerfile      # Frontend container config
+│   └── nginx.conf      # Nginx configuration
+├── main.py             # FastAPI application entry point
+├── docker-compose.yml  # Multi-container orchestration
+└── requirements.txt    # Python dependencies
+```
+
+## 🔧 Configuration
 
 Create a `.env` file in the root directory:
 
@@ -47,79 +131,189 @@ NODE_ENV=development
 PAGINATION_LIMIT=12
 ```
 
-## Running the Application
+### 🔄 Switching Between MongoDB Local (Docker) and Atlas (Cloud)
 
-### With Docker (Recommended - Includes MongoDB)
+The application supports both local MongoDB (Docker) and MongoDB Atlas (cloud) databases. Switching between them is straightforward:
 
-This setup includes both FastAPI backend and MongoDB in Docker containers.
+**Using Local MongoDB (Docker)** - Default setup when running with docker-compose:
 
-```bash
-# Build and run both FastAPI and MongoDB
-docker-compose up -d
-
-# View logs
-docker-compose logs -f
-
-# Seed the database with sample data
-docker exec tweeky-queeky-fastapi python seeder.py
-
-# Stop all containers
-docker-compose down
-
-# Stop and remove volumes (will delete all data)
-docker-compose down -v
+```env
+# In docker-compose.yml (already configured)
+MONGO_URI=mongodb://admin:adminpassword@mongodb:27017/tweeky?authSource=admin
 ```
 
-**MongoDB Access:**
-- **Host:** localhost:27017
-- **Username:** admin
-- **Password:** adminpassword
-- **Database:** tweeky
+**Using MongoDB Atlas (Cloud)**:
 
-### Without Docker
-
-```bash
-# Development mode with auto-reload
-uvicorn main:app --reload --port 5000
-
-# Or using Python directly
-python main.py
+```env
+# In .env file or docker-compose.yml
+MONGO_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/tweeky?retryWrites=true&w=majority
 ```
 
-## Database Seeder
+After changing the `MONGO_URI`:
 
 ```bash
-# Import sample data
-python seeder.py
+# Restart the backend service
+docker-compose restart fastapi-backend
 
-# Destroy all data
-python seeder.py -d
+# Or restart all services
+docker-compose down && docker-compose up -d
 ```
 
-## API Documentation
+**Benefits of Each:**
 
-Once the server is running, visit:
+- **Local (Docker)**: No internet required, faster development, free, full control
+- **Atlas (Cloud)**: Managed service, automatic backups, scalable, accessible anywhere
+
+## 📡 API Documentation
+
+Once the server is running:
 
 - **Swagger UI**: http://localhost:5000/docs
 - **ReDoc**: http://localhost:5000/redoc
 
-## API Endpoints
+### Key Endpoints
 
-### Users
+**Authentication**
 
-- `POST /api/users/auth` - Authenticate user
-- `POST /api/users` - Register user
-- `POST /api/users/logout` - Logout user
-- `GET /api/users/profile` - Get user profile (Protected)
-- `PUT /api/users/profile` - Update profile (Protected)
-- `GET /api/users` - Get all users (Admin)
-- `DELETE /api/users/{id}` - Delete user (Admin)
-- `GET /api/users/{id}` - Get user by ID (Admin)
-- `PUT /api/users/{id}` - Update user (Admin)
+- `POST /api/users/auth` - Login
+- `POST /api/users` - Register
+- `POST /api/users/logout` - Logout
 
-### Products
+**Products**
 
-- `GET /api/products` - Get all products (with pagination & search)
+- `GET /api/products` - List products (pagination, search)
+- `GET /api/products/{id}` - Get product details
+- `GET /api/products/top` - Top rated products
+- `POST /api/products/{id}/reviews` - Add review
+
+**Orders**
+
+- `POST /api/orders` - Create order
+- `GET /api/orders/mine` - User's orders
+- `GET /api/orders/{id}` - Order details
+- `PUT /api/orders/{id}/pay` - Process payment
+
+**Admin**
+
+- `GET /api/users` - Manage users
+- `PUT /api/orders/{id}/deliver` - Mark delivered
+- Full CRUD for products
+
+## 🧪 Testing
+
+Comprehensive test suite with 35 automated tests covering all critical flows:
+
+```bash
+# Run all tests
+python tests/test_comprehensive_e2e.py    # 13 E2E tests
+python tests/test_integration.py          # 17 integration tests
+python tests/test_payment_stress.py       # 5 stress tests
+
+# Test results: 34/35 passed (97.1%)
+```
+
+**Test Coverage:**
+
+- ✅ User authentication and authorization
+- ✅ Product CRUD operations
+- ✅ Order creation and management
+- ✅ Payment processing (PayPal)
+- ✅ Admin functions
+- ✅ Edge cases and error handling
+
+## 🐳 Docker Deployment
+
+The application is fully containerized:
+
+```yaml
+Services:
+  - frontend (React + Nginx) → Port 3000
+  - fastapi-backend → Port 5000
+  - mongodb → Port 27017
+```
+
+**Access Points:**
+
+- **Application**: http://localhost:3000
+- **API**: http://localhost:5000
+- **API Docs**: http://localhost:5000/docs
+
+## 🔒 Security Features
+
+- JWT tokens in HTTP-only cookies
+- Password hashing with bcrypt
+- CORS configuration
+- Input validation with Pydantic
+- SQL injection prevention (NoSQL)
+- Secure payment processing
+
+## 📈 Performance
+
+- **Async/await** throughout for high concurrency
+- **MongoDB indexes** for fast queries
+- **Docker optimization** with multi-stage builds
+- **Nginx caching** for static assets
+- **Connection pooling** for database
+
+## 🛠️ Development
+
+```bash
+# Install development dependencies
+pip install -r requirements.txt
+
+# Run with auto-reload
+uvicorn main:app --reload
+
+# Format code
+black .
+
+# Lint code
+ruff check .
+```
+
+## 📝 Database Schema
+
+**Users**
+
+- Email, password (hashed), name, admin flag
+
+**Products**
+
+- Name, image, brand, category, description
+- Price, stock count, rating
+
+**Orders**
+
+- User reference, order items, shipping address
+- Payment method, prices, status flags
+
+## 🎯 Future Enhancements
+
+- [ ] Add product categories filtering
+- [ ] Implement wishlist feature
+- [ ] Add email notifications
+- [ ] Integrate additional payment methods
+- [ ] Add product recommendations
+- [ ] Implement advanced search filters
+
+## 📄 License
+
+This project is open source and available under the MIT License.
+
+## 👨‍💻 Author
+
+Built with ❤️ using FastAPI, React, and MongoDB
+
+---
+
+**Note**: This is a portfolio/demonstration project. For production use, ensure you:
+
+- Use strong JWT secrets
+- Enable HTTPS
+- Use production PayPal credentials
+- Implement rate limiting
+- Add comprehensive logging
+- Set up monitoring and alerts
 - `GET /api/products/{id}` - Get product by ID
 - `POST /api/products` - Create product (Admin)
 - `PUT /api/products/{id}` - Update product (Admin)

@@ -1,62 +1,81 @@
-from pydantic import BaseModel, Field
-from typing import List, Optional
+from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
+from typing import List, Optional, Any
 from datetime import datetime
 
 
 # Embedded schemas
 class ShippingAddressSchema(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+    
     address: str
     city: str
     postal_code: str = Field(alias="postalCode")
     country: str
 
-    class Config:
-        populate_by_name = True
-
 
 class OrderItemSchema(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+    
     name: str
     qty: int
     image: str
     price: float
     product: str
 
-    class Config:
-        populate_by_name = True
+    @model_validator(mode='before')
+    @classmethod
+    def set_product_from_id(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            # If _id is provided but product is not, use _id as product
+            if '_id' in data and 'product' not in data:
+                data['product'] = str(data['_id'])
+        return data
 
 
 class PaymentResultSchema(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+    
     id: Optional[str] = None
     status: Optional[str] = None
     update_time: Optional[str] = Field(None, alias="update_time")
     email_address: Optional[str] = Field(None, alias="email_address")
 
-    class Config:
-        populate_by_name = True
-
 
 # Request schemas
 class OrderCreate(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+    
     order_items: List[OrderItemSchema] = Field(alias="orderItems")
     shipping_address: ShippingAddressSchema = Field(alias="shippingAddress")
     payment_method: str = Field(alias="paymentMethod")
 
-    class Config:
-        populate_by_name = True
-
 
 class OrderPaymentUpdate(BaseModel):
-    id: str
-    status: str
-    update_time: str
-    email_address: str = Field(alias="payer")
-
-    class Config:
-        populate_by_name = True
+    model_config = ConfigDict(populate_by_name=True, extra='allow', arbitrary_types_allowed=True)
+    
+    # Make ALL fields optional with defaults to accept any PayPal response structure
+    id: Optional[str] = None
+    status: Optional[str] = None
+    update_time: Optional[str] = None
+    email_address: Optional[str] = None
+    
+    # PayPal payer object (optional)
+    payer: Optional[dict] = None
+    
+    # Additional PayPal fields (all optional)
+    create_time: Optional[str] = None
+    purchase_units: Optional[List[dict]] = None
+    links: Optional[List[dict]] = None
+    intent: Optional[str] = None
+    
+    # Allow any other fields PayPal might send
+    model_config = ConfigDict(extra='allow', populate_by_name=True)
 
 
 # Response schemas
 class OrderResponse(BaseModel):
+    model_config = ConfigDict(populate_by_name=True, from_attributes=True)
+    
     id: str = Field(alias="_id")
     user: str
     order_items: List[dict] = Field(alias="orderItems")
@@ -73,7 +92,3 @@ class OrderResponse(BaseModel):
     delivered_at: Optional[datetime] = Field(None, alias="deliveredAt")
     created_at: datetime = Field(alias="createdAt")
     updated_at: datetime = Field(alias="updatedAt")
-
-    class Config:
-        populate_by_name = True
-        from_attributes = True

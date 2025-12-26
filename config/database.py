@@ -16,7 +16,6 @@ async def init_db():
         database=client.get_default_database(),
         document_models=[User, Product, Review, Order]
     )
-    print(f"Connected to MongoDB at {settings.MONGO_URI}")
 
 
 async def close_db():

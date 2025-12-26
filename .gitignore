@@ -5,8 +5,13 @@ __pycache__/
 
 # Virtual environments
 venv/
+.venv/
 env/
 ENV/
+
+# Dependencies
+node_modules/
+frontend/node_modules/
 
 # Environment variables
 .env
@@ -22,9 +27,68 @@ ENV/
 uploads/*
 !uploads/.gitkeep
 
+# Product images (too long filenames)
+frontend/public/images/*.avif
+frontend/public/images/*.jpg
+frontend/public/images/*.png
+frontend/public/images/*.webp
+
 # Logs
 *.log
 
 # Database
 *.db
 *.sqlite3
+
+# Docker
+*.dockerignore
+
+# Test files (keep only tests/ directory)
+test_*.py
+!tests/test_*.py
+check_*.py
+debug_*.py
+emergency_*.py
+manual_*.py
+quick_*.py
+run_all_tests.py
+trace_*.py
+verify_*.py
+
+# Test reports and outputs
+TEST_RESULTS_SUMMARY.txt
+E2E_TEST_REPORT_*.txt
+*.log
+
+# Cookies and temporary files
+cookies.txt
+nul
+NUL
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Coverage reports
+htmlcov/
+.coverage
+.pytest_cache/
+
+# Frontend build
+frontend/build/
+frontend/.env
+frontend/.env.local
+
+# Python cache
+*.pyc
+__pycache__/
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# Docker volumes
+postgres_data/
+mongo_data/

@@ -1,10 +1,12 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional
 from datetime import datetime
 
 
 # Request schemas
 class ProductCreate(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+    
     name: str = "Sample name"
     price: float = 0
     image: str = "/images/sample.jpg"
@@ -13,11 +15,10 @@ class ProductCreate(BaseModel):
     count_in_stock: int = Field(0, alias="countInStock")
     description: str = "Sample description"
 
-    class Config:
-        populate_by_name = True
-
 
 class ProductUpdate(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+    
     name: Optional[str] = None
     price: Optional[float] = None
     description: Optional[str] = None
@@ -25,9 +26,6 @@ class ProductUpdate(BaseModel):
     brand: Optional[str] = None
     category: Optional[str] = None
     count_in_stock: Optional[int] = Field(None, alias="countInStock")
-
-    class Config:
-        populate_by_name = True
 
 
 class ReviewCreate(BaseModel):
@@ -37,6 +35,8 @@ class ReviewCreate(BaseModel):
 
 # Response schemas
 class ReviewResponse(BaseModel):
+    model_config = ConfigDict(populate_by_name=True, from_attributes=True)
+    
     id: str = Field(alias="_id")
     name: str
     rating: int
@@ -44,12 +44,10 @@ class ReviewResponse(BaseModel):
     user: str
     created_at: datetime = Field(alias="createdAt")
 
-    class Config:
-        populate_by_name = True
-        from_attributes = True
-
 
 class ProductResponse(BaseModel):
+    model_config = ConfigDict(populate_by_name=True, from_attributes=True)
+    
     id: str = Field(alias="_id")
     user: str
     name: str
@@ -57,16 +55,13 @@ class ProductResponse(BaseModel):
     brand: str
     category: str
     description: str
+    reviews: List[ReviewResponse] = Field(default_factory=list)
     rating: float
     num_reviews: int = Field(alias="numReviews")
     price: float
     count_in_stock: int = Field(alias="countInStock")
     created_at: datetime = Field(alias="createdAt")
     updated_at: datetime = Field(alias="updatedAt")
-
-    class Config:
-        populate_by_name = True
-        from_attributes = True
 
 
 class ProductListResponse(BaseModel):

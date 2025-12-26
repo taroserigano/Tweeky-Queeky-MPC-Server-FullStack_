@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, ConfigDict
 from typing import Optional
 from datetime import datetime
 
@@ -22,33 +22,28 @@ class UserUpdate(BaseModel):
 
 
 class UserAdminUpdate(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+    
     name: Optional[str] = None
     email: Optional[EmailStr] = None
     is_admin: Optional[bool] = Field(None, alias="isAdmin")
 
-    class Config:
-        populate_by_name = True
-
 
 # Response schemas
 class UserResponse(BaseModel):
+    model_config = ConfigDict(populate_by_name=True, from_attributes=True)
+    
     id: str = Field(alias="_id")
     name: str
     email: EmailStr
     is_admin: bool = Field(alias="isAdmin")
 
-    class Config:
-        populate_by_name = True
-        from_attributes = True
-
 
 class UserListResponse(BaseModel):
+    model_config = ConfigDict(populate_by_name=True, from_attributes=True)
+    
     id: str = Field(alias="_id")
     name: str
     email: EmailStr
     is_admin: bool = Field(alias="isAdmin")
     created_at: datetime = Field(alias="createdAt")
-
-    class Config:
-        populate_by_name = True
-        from_attributes = True

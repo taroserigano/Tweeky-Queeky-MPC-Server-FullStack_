@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Clear JWT Cookie</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 50px auto;
+        padding: 20px;
+        background: #f5f5f5;
+      }
+      .container {
+        background: white;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        color: #333;
+      }
+      .button {
+        background: #17a2b8;
+        color: white;
+        padding: 15px 30px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+        margin: 10px 5px;
+      }
+      .button:hover {
+        background: #138496;
+      }
+      .success {
+        background: #28a745;
+        color: white;
+        padding: 15px;
+        border-radius: 5px;
+        margin-top: 20px;
+        display: none;
+      }
+      .info {
+        background: #e7f3ff;
+        padding: 15px;
+        border-left: 4px solid #2196f3;
+        margin: 20px 0;
+      }
+      code {
+        background: #f4f4f4;
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-family: 'Courier New', monospace;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🔧 Fix JWT Signature Error</h1>
+
+      <div class="info">
+        <h3>What's the problem?</h3>
+        <p>You're seeing: <code>JsonWebTokenError: invalid signature</code></p>
+        <p>
+          This happens when your JWT cookie was created with a different secret
+          key than what's currently in your <code>.env</code> file.
+        </p>
+      </div>
+
+      <h2>Solution:</h2>
+      <ol>
+        <li>Click the button below to clear all authentication data</li>
+        <li>Go back to the app and login again</li>
+        <li>Everything should work! ✅</li>
+      </ol>
+
+      <button class="button" onclick="clearAuth()">
+        Clear JWT Cookie & Storage
+      </button>
+      <button
+        class="button"
+        onclick="window.location.href='http://localhost:3000'"
+      >
+        Go to App
+      </button>
+
+      <div class="success" id="successMessage">
+        ✅ Success! All authentication data cleared.<br />
+        Now go to
+        <a
+          href="http://localhost:3000"
+          style="color: white; text-decoration: underline"
+          >the app</a
+        >
+        and login again.
+      </div>
+
+      <div class="info" style="margin-top: 30px">
+        <h3>What this does:</h3>
+        <ul>
+          <li>Clears the JWT cookie</li>
+          <li>Clears localStorage</li>
+          <li>Clears sessionStorage</li>
+        </ul>
+        <p>
+          <strong>Note:</strong> This is safe - it only clears authentication
+          data for localhost:3000
+        </p>
+      </div>
+    </div>
+
+    <script>
+      function clearAuth() {
+        // Clear all cookies for localhost
+        document.cookie.split(';').forEach(function (c) {
+          document.cookie = c
+            .replace(/^ +/, '')
+            .replace(
+              /=.*/,
+              '=;expires=' + new Date().toUTCString() + ';path=/'
+            );
+        });
+
+        // Clear localStorage
+        localStorage.clear();
+
+        // Clear sessionStorage
+        sessionStorage.clear();
+
+        // Show success message
+        document.getElementById('successMessage').style.display = 'block';
+
+        // Try to clear cookies for the main app domain
+        setTimeout(() => {
+          fetch('http://localhost:5000/api/users/logout', {
+            method: 'POST',
+            credentials: 'include',
+          }).catch(() => {
+            // Ignore errors - just trying to clear backend cookie
+          });
+        }, 100);
+      }
+    </script>
+  </body>
+</html>

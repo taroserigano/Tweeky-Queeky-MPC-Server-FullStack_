@@ -42,8 +42,7 @@ async def check_if_new_transaction(order_model, paypal_transaction_id: str) -> b
         ).to_list()
         
         return len(orders) == 0
-    except Exception as err:
-        print(f"Error checking transaction: {err}")
+    except Exception:
         return False
 
 

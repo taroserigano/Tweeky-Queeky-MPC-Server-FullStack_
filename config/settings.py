@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     PAGINATION_LIMIT: int = 12
 
     class Config:
-        env_file = "../.env"
+        env_file = ".env"
         case_sensitive = True
 
 
