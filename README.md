@@ -558,24 +558,6 @@ ruff check .
 
 ---
 
-## 📊 Technical Specifications
-
-**Performance Metrics:**
-
-- ⚡ API Response Time: <50ms (average)
-- 🚀 Frontend Load Time: <1.5s (LCP)
-- 📈 Concurrent Users: 1000+ supported
-- 💾 Database Queries: Optimized with indexes
-
-**Code Quality:**
-
-- ✅ Type Safety: 100% type-hinted Python
-- ✅ Test Coverage: 97.1% (35/35 tests passing)
-- ✅ Code Style: Black formatter, Ruff linter
-- ✅ Security: OWASP Top 10 compliant
-
----
-
 <div align="center">
 
 **🌟 Star this repo if you found it helpful!**
@@ -644,13 +626,6 @@ backend_fastapi/
 └── requirements.txt     # Dependencies
 ```
 
-## Key Differences from Node.js Version
-
-1. **Type Safety**: Full type hints with Pydantic
-2. **Async/Await**: Native async throughout
-3. **Auto Documentation**: Built-in Swagger/ReDoc
-4. **Dependency Injection**: FastAPI's DI system instead of middleware chains
-5. **Better Validation**: Pydantic models with automatic validation
 
 ## Default Admin Account
 
