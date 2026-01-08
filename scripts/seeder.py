@@ -1,5 +1,10 @@
 import asyncio
 import sys
+from pathlib import Path
+
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 from motor.motor_asyncio import AsyncIOMotorClient
 from beanie import init_beanie
 import bcrypt

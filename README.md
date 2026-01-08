@@ -658,3 +658,5 @@ backend_fastapi/
 
 - **Email**: admin@email.com
 - **Password**: 123456
+
+# Tweeky-Queeky-Store-Dockerized-Mongo-FastAPI-app
