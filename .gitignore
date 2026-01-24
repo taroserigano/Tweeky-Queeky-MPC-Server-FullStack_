@@ -93,7 +93,20 @@ __pycache__/
 postgres_data/
 mongo_data/
 
-# Markdown files (except README)
-*.md
-!README.md
-!**/README.md
+# Markdown files (except README and docs)
+# *.md
+# !README.md
+# !**/README.md
+
+# MCP Server specific
+mcp_server/__pycache__/
+.mcp/
+
+# Jupyter notebooks
+*.ipynb
+!notebooks/*.ipynb
+
+# Build artifacts
+dist/
+build/
+*.egg-info/

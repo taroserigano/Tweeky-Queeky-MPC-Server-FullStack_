@@ -29,6 +29,6 @@ def generate_token(response: Response, user_id: str):
         value=token,
         httponly=True,
         secure=settings.NODE_ENV != "development",  # True in production
-        samesite="strict",
+        samesite="lax" if settings.NODE_ENV == "development" else "strict",  # Lax in dev for cross-origin
         max_age=settings.JWT_EXPIRE_DAYS * 24 * 60 * 60  # 30 days in seconds
     )

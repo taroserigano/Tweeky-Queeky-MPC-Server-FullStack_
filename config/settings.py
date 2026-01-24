@@ -13,10 +13,12 @@ class Settings(BaseSettings):
     PAYPAL_API_URL: str = "https://api-m.sandbox.paypal.com"
     NODE_ENV: str = "development"
     PAGINATION_LIMIT: int = 12
+    OPEN_AI: Optional[str] = None  # OpenAI API key for MCP AI features
 
     class Config:
         env_file = ".env"
         case_sensitive = True
+        extra = "ignore"  # Ignore extra env vars not in the model
 
 
 settings = Settings()
