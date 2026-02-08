@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
-import { BASE_URL, ORDERS_URL, PAYPAL_URL } from '../constants';
+import { BASE_URL, ORDERS_URL, PAYPAL_URL, STRIPE_URL } from '../constants';
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -32,6 +32,20 @@ export const useOrderDetails = (orderId) => {
   });
 };
 
+export const useUpdateOrder = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ orderId, updateData }) => {
+      const { data } = await api.put(`${ORDERS_URL}/${orderId}/update-details`, updateData);
+      return data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries(['order', variables.orderId]);
+    },
+  });
+};
+
 export const usePayOrder = () => {
   const queryClient = useQueryClient();
   
@@ -55,6 +69,26 @@ export const usePayPalClientId = () => {
       return data;
     },
     staleTime: Infinity,
+  });
+};
+
+export const useStripePublishableKey = () => {
+  return useQuery({
+    queryKey: ['stripe', 'publishableKey'],
+    queryFn: async () => {
+      const { data } = await api.get(STRIPE_URL);
+      return data;
+    },
+    staleTime: Infinity,
+  });
+};
+
+export const useCreatePaymentIntent = () => {
+  return useMutation({
+    mutationFn: async (orderId) => {
+      const { data } = await api.post(`${ORDERS_URL}/${orderId}/stripe-payment-intent`);
+      return data;
+    },
   });
 };
 

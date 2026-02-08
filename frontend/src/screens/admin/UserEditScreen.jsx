@@ -4,7 +4,6 @@ import { Form, Button } from "react-bootstrap";
 import Message from "../../components/Message";
 import Loader from "../../components/Loader";
 import FormContainer from "../../components/FormContainer";
-import { toast } from "react-toastify";
 import { useParams } from "react-router-dom";
 import { useUserDetails, useUpdateUser } from "../../hooks";
 
@@ -26,14 +25,11 @@ const UserEditScreen = () => {
       { userId, name, email, isAdmin },
       {
         onSuccess: () => {
-          toast.success("user updated successfully");
           refetch();
           navigate("/admin/userlist");
         },
-        onError: (err) => {
-          toast.error(err?.response?.data?.detail || err.message);
-        },
-      }
+        onError: () => {},
+      },
     );
   };
 
@@ -57,7 +53,9 @@ const UserEditScreen = () => {
           <Loader />
         ) : error ? (
           <Message variant="danger">
-            {error?.data?.message || error.error}
+            {error?.response?.data?.detail ||
+              error?.message ||
+              "Failed to load user"}
           </Message>
         ) : (
           <Form onSubmit={submitHandler}>

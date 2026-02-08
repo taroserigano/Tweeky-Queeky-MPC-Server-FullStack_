@@ -4,7 +4,6 @@ import { FaTrash, FaEdit, FaCheck, FaTimes } from "react-icons/fa";
 import Message from "../../components/Message";
 import Loader from "../../components/Loader";
 import { useDeleteUser, useUsers } from "../../hooks";
-import { toast } from "react-toastify";
 import { Link } from "react-router-dom";
 
 const UserListScreen = () => {
@@ -17,11 +16,8 @@ const UserListScreen = () => {
       deleteUser(id, {
         onSuccess: () => {
           refetch();
-          toast.success("User deleted");
         },
-        onError: (err) => {
-          toast.error(err?.response?.data?.detail || err.message);
-        },
+        onError: () => {},
       });
     }
   };
@@ -33,7 +29,9 @@ const UserListScreen = () => {
         <Loader />
       ) : error ? (
         <Message variant="danger">
-          {error?.data?.message || error.error}
+          {error?.response?.data?.detail ||
+            error?.message ||
+            "Failed to load users"}
         </Message>
       ) : (
         <Table striped bordered hover responsive className="table-sm">

@@ -7,35 +7,51 @@ from schemas.product import (
 )
 from middleware.auth import get_current_user, require_admin
 from config.settings import settings
-from typing import Optional
+from typing import Optional, List
 from bson import ObjectId
 from datetime import datetime
 import math
+import secrets
 
 router = APIRouter(prefix="/api/products", tags=["products"])
 
 
+def generate_sku_fallback() -> str:
+    """Generate a SKU when no ObjectId-based SKU is available yet."""
+    return f"SKU-{secrets.token_hex(4).upper()}"
+
+
 def product_to_response(product: Product) -> ProductResponse:
     """Helper function to convert Product model to ProductResponse"""
+    sku = product.sku or f"SKU-{str(product.id).upper()}"
+    
+    # Handle reviews - check if they're fetched (have attributes) or just Links
+    reviews = []
+    if product.reviews:
+        for review in product.reviews:
+            # Check if review is fetched (has attributes) or is a Link object
+            if hasattr(review, 'name'):
+                reviews.append(ReviewResponse(
+                    _id=str(review.id),
+                    name=review.name,
+                    rating=review.rating,
+                    comment=review.comment,
+                    user=str(review.user),
+                    createdAt=review.created_at
+                ))
+    
     return ProductResponse(
         _id=str(product.id),
         user=str(product.user),
+        sku=sku,
         name=product.name,
         image=product.image,
         brand=product.brand,
         category=product.category,
         description=product.description,
-        reviews=[
-            ReviewResponse(
-                _id=str(review.id),
-                name=review.name,
-                rating=review.rating,
-                comment=review.comment,
-                user=str(review.user),
-                createdAt=review.created_at
-            )
-            for review in (product.reviews or [])
-        ],
+        detailedDescription=product.detailed_description,
+        specifications=product.specifications,
+        reviews=reviews,
         rating=product.rating,
         numReviews=product.num_reviews,
         price=product.price,
@@ -47,18 +63,95 @@ def product_to_response(product: Product) -> ProductResponse:
 
 @router.get("/top")
 async def get_top_products():
-    """Get top rated products"""
-    products = await Product.find(fetch_links=True).sort("-rating").limit(3).to_list()
+    """Get featured products for carousel"""
+    # Specific featured products for carousel
+    featured_names = [
+        "Focusrite Scarlett 2i2 4th Gen",
+        "DYU 14 Folding Electric Bike",
+        "BOSSIN Home Office Chair",
+        "Apple AirPods 4"
+    ]
+    
+    products = []
+    for name in featured_names:
+        product = await Product.find_one(
+            {"name": {"$regex": name, "$options": "i"}},
+            fetch_links=True
+        )
+        if product:
+            products.append(product)
+    
+    # If featured products not found, fall back to top rated
+    if len(products) < 3:
+        products = await Product.find(fetch_links=True).sort("-rating").limit(4).to_list()
     
     return [product_to_response(product) for product in products]
+
+
+@router.get("/autocomplete")
+async def get_autocomplete_suggestions(
+    q: str = Query(..., min_length=1, max_length=100)
+) -> List[dict]:
+    """Get autocomplete suggestions for search query"""
+    if len(q) < 2:
+        return []
+    
+    # Search in product names, brands, and categories
+    products = await Product.find({
+        "$or": [
+            {"name": {"$regex": q, "$options": "i"}},
+            {"brand": {"$regex": q, "$options": "i"}},
+            {"category": {"$regex": q, "$options": "i"}}
+        ]
+    }).limit(10).to_list()
+    
+    suggestions = []
+    seen = set()
+    
+    for product in products:
+        # Add product name
+        if product.name not in seen:
+            suggestions.append({
+                "text": product.name,
+                "type": "product",
+                "id": str(product.id)
+            })
+            seen.add(product.name)
+        
+        # Add brand
+        if product.brand and product.brand not in seen:
+            suggestions.append({
+                "text": product.brand,
+                "type": "brand"
+            })
+            seen.add(product.brand)
+        
+        # Add category
+        if product.category and product.category not in seen:
+            suggestions.append({
+                "text": product.category,
+                "type": "category"
+            })
+            seen.add(product.category)
+    
+    return suggestions[:10]
 
 
 @router.get("", response_model=ProductListResponse, response_model_exclude_none=False)
 async def get_products(
     keyword: Optional[str] = None,
-    page_number: int = Query(1, alias="pageNumber", ge=1)
+    page_number: int = Query(1, alias="pageNumber", ge=1),
+    sort_by: Optional[str] = Query(None, alias="sortBy")
 ):
-    """Fetch all products with pagination and search"""
+    """Fetch all products with pagination, search, and sorting
+    
+    Sort options:
+    - price_asc: Price (Low to High)
+    - price_desc: Price (High to Low)
+    - rating_desc: Rating (High to Low)
+    - newest: Newest First
+    - oldest: Oldest First
+    """
     page_size = settings.PAGINATION_LIMIT
     skip = page_size * (page_number - 1)
     
@@ -66,8 +159,23 @@ async def get_products(
     if keyword:
         query = {"name": {"$regex": keyword, "$options": "i"}}
     
+    # Build query
+    query_builder = Product.find(query, fetch_links=True)
+    
+    # Apply sorting using Beanie syntax
+    if sort_by == "price_asc":
+        query_builder = query_builder.sort(+Product.price)
+    elif sort_by == "price_desc":
+        query_builder = query_builder.sort(-Product.price)
+    elif sort_by == "rating_desc":
+        query_builder = query_builder.sort(-Product.rating)
+    elif sort_by == "oldest":
+        query_builder = query_builder.sort(+Product.created_at)
+    else:  # "newest" or default
+        query_builder = query_builder.sort(-Product.created_at)
+    
     count = await Product.find(query).count()
-    products = await Product.find(query, fetch_links=True).skip(skip).limit(page_size).to_list()
+    products = await query_builder.skip(skip).limit(page_size).to_list()
     
     pages = math.ceil(count / page_size) if count > 0 else 1
     
@@ -111,15 +219,23 @@ async def create_product(
         name=product_data.name,
         price=product_data.price,
         user=current_user.id,
+        sku=product_data.sku or generate_sku_fallback(),
         image=product_data.image,
         brand=product_data.brand,
         category=product_data.category,
         count_in_stock=product_data.count_in_stock,
         num_reviews=0,
-        description=product_data.description
+        description=product_data.description,
+        detailed_description=product_data.detailed_description,
+        specifications=product_data.specifications,
     )
     
     await product.save()
+
+    # If SKU was auto-generated, upgrade it to include the product id (stable + unique)
+    if product.sku and product.sku.startswith("SKU-") and len(product.sku) == len("SKU-") + 8:
+        product.sku = f"{product.sku}-{str(product.id)[-6:].upper()}"
+        await product.save()
     
     return product_to_response(product)
 
@@ -147,10 +263,16 @@ async def update_product(
     
     if product_data.name:
         product.name = product_data.name
+    if product_data.sku is not None:
+        product.sku = product_data.sku
     if product_data.price is not None:
         product.price = product_data.price
     if product_data.description:
         product.description = product_data.description
+    if product_data.detailed_description is not None:
+        product.detailed_description = product_data.detailed_description
+    if product_data.specifications is not None:
+        product.specifications = product_data.specifications
     if product_data.image:
         product.image = product_data.image
     if product_data.brand:

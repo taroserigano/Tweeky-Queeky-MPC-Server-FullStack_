@@ -35,6 +35,14 @@ services:
       - PAYPAL_API_URL=${PAYPAL_API_URL:-https://api-m.sandbox.paypal.com}
       - NODE_ENV=development
       - PAGINATION_LIMIT=${PAGINATION_LIMIT:-12}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_CHAT_MODEL=${OPENAI_CHAT_MODEL:-gpt-4o-mini}
+      - OPENAI_EMBED_MODEL=${OPENAI_EMBED_MODEL:-text-embedding-3-small}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - ANTHROPIC_CHAT_MODEL=${ANTHROPIC_CHAT_MODEL:-claude-3-5-sonnet-latest}
+      - PINECONE_API_KEY=${PINECONE_API_KEY}
+      - PINECONE_ENVIRONMENT=${PINECONE_ENVIRONMENT}
+      - PINECONE_INDEX=${PINECONE_INDEX}
     volumes:
       - uploads:/app/uploads
     restart: unless-stopped

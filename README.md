@@ -327,47 +327,47 @@ python -m mcp_server.server
 
 **Catalog & Search Tools:**
 
-| Tool | Description |
-|------|-------------|
-| `list_products` | List products with optional category/price filters |
-| `search_products` | Search by name, brand, or category |
-| `get_product` | Get full product details by ID |
-| `get_top_products` | Get top-rated products |
-| `get_product_reviews` | Get reviews for a product |
-| `catalog_stats` | Total products, reviews, category counts |
+| Tool                  | Description                                        |
+| --------------------- | -------------------------------------------------- |
+| `list_products`       | List products with optional category/price filters |
+| `search_products`     | Search by name, brand, or category                 |
+| `get_product`         | Get full product details by ID                     |
+| `get_top_products`    | Get top-rated products                             |
+| `get_product_reviews` | Get reviews for a product                          |
+| `catalog_stats`       | Total products, reviews, category counts           |
 
 **Catalog Intelligence Tools:**
 
-| Tool | Description |
-|------|-------------|
-| `low_stock_report` | Products at or below stock threshold |
-| `price_outliers` | Products with unusual prices vs category avg |
-| `category_price_summary` | Min/max/avg price per category |
-| `reviews_sentiment_summary` | Positive/neutral/negative review counts |
-| `inventory_value` | Total inventory value by category |
+| Tool                        | Description                                  |
+| --------------------------- | -------------------------------------------- |
+| `low_stock_report`          | Products at or below stock threshold         |
+| `price_outliers`            | Products with unusual prices vs category avg |
+| `category_price_summary`    | Min/max/avg price per category               |
+| `reviews_sentiment_summary` | Positive/neutral/negative review counts      |
+| `inventory_value`           | Total inventory value by category            |
 
 **Shopping Assistant Tools (AI-powered):**
 
-| Tool | Description |
-|------|-------------|
-| `recommend_products` | AI recommendations based on preferences + budget |
-| `compare_products` | Side-by-side product comparison |
-| `build_cart_suggestion` | AI builds a cart for a goal within budget |
-| `explain_product` | AI-generated product summary |
-| `answer_product_question` | AI answers customer questions about a product |
+| Tool                      | Description                                      |
+| ------------------------- | ------------------------------------------------ |
+| `recommend_products`      | AI recommendations based on preferences + budget |
+| `compare_products`        | Side-by-side product comparison                  |
+| `build_cart_suggestion`   | AI builds a cart for a goal within budget        |
+| `explain_product`         | AI-generated product summary                     |
+| `answer_product_question` | AI answers customer questions about a product    |
 
 **Admin Ops Tools (with Audit Logging & Dry-Run):**
 
-| Tool | Description |
-|------|-------------|
-| `list_admins` | List admin users for authentication reference |
-| `update_stock` | Update product stock (dry-run supported) |
-| `update_product_price` | Update product price (dry-run supported) |
-| `flag_review` | Flag a review for moderation |
-| `bulk_update_stock` | Batch update stock for multiple products |
-| `mark_order_delivered` | Mark an order as delivered |
-| `get_audit_log` | Retrieve audit log entries with filters |
-| `admin_dashboard_summary` | Quick admin metrics dashboard |
+| Tool                      | Description                                   |
+| ------------------------- | --------------------------------------------- |
+| `list_admins`             | List admin users for authentication reference |
+| `update_stock`            | Update product stock (dry-run supported)      |
+| `update_product_price`    | Update product price (dry-run supported)      |
+| `flag_review`             | Flag a review for moderation                  |
+| `bulk_update_stock`       | Batch update stock for multiple products      |
+| `mark_order_delivered`    | Mark an order as delivered                    |
+| `get_audit_log`           | Retrieve audit log entries with filters       |
+| `admin_dashboard_summary` | Quick admin metrics dashboard                 |
 
 > **💡 Safe Agentic AI Pattern:** All admin tools require `admin_email` for authentication and support `dry_run=True` mode to preview changes without applying them. Every action is logged to the `AuditLog` collection for accountability.
 
@@ -683,7 +683,6 @@ backend_fastapi/
 ├── seeder.py            # Database seeder
 └── requirements.txt     # Dependencies
 ```
-
 
 ## Default Admin Account
 

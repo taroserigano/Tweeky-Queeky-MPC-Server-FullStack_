@@ -40,6 +40,10 @@ frontend/public/images/*.webp
 *.db
 *.sqlite3
 
+# Process tracking
+.pids/
+*.pid
+
 # Docker
 *.dockerignore
 
@@ -110,3 +114,14 @@ mcp_server/__pycache__/
 dist/
 build/
 *.egg-info/
+
+# AWS Deployment
+*.pem
+deploy/*.pem
+deploy/ec2-instance.txt
+deploy/*.tar.gz
+/tmp/tweeky-deploy.tar.gz
+
+# Backup files
+*.gz
+backup-*.gz

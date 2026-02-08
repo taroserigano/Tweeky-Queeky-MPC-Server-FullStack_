@@ -50,6 +50,14 @@ class OrderCreate(BaseModel):
     payment_method: str = Field(alias="paymentMethod")
 
 
+class OrderUpdatePrePay(BaseModel):
+    """Update shipping address and/or payment method on an unpaid order."""
+    model_config = ConfigDict(populate_by_name=True)
+
+    shipping_address: Optional[ShippingAddressSchema] = Field(None, alias="shippingAddress")
+    payment_method: Optional[str] = Field(None, alias="paymentMethod")
+
+
 class OrderPaymentUpdate(BaseModel):
     model_config = ConfigDict(populate_by_name=True, extra='allow', arbitrary_types_allowed=True)
     

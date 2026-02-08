@@ -1,12 +1,12 @@
-import { createSlice } from '@reduxjs/toolkit';
-import { updateCart } from '../utils/cartUtils';
+import { createSlice } from "@reduxjs/toolkit";
+import { updateCart } from "../utils/cartUtils";
 
-const initialState = localStorage.getItem('cart')
-  ? JSON.parse(localStorage.getItem('cart'))
-  : { cartItems: [], shippingAddress: {}, paymentMethod: 'PayPal' };
+const initialState = localStorage.getItem("cart")
+  ? JSON.parse(localStorage.getItem("cart"))
+  : { cartItems: [], shippingAddress: {}, paymentMethod: "PayPal" };
 
 const cartSlice = createSlice({
-  name: 'cart',
+  name: "cart",
   initialState,
   reducers: {
     addToCart: (state, action) => {
@@ -16,7 +16,7 @@ const cartSlice = createSlice({
 
       if (existItem) {
         state.cartItems = state.cartItems.map((x) =>
-          x._id === existItem._id ? { ...x, qty: x.qty + item.qty } : x
+          x._id === existItem._id ? { ...x, qty: x.qty + item.qty } : x,
         );
       } else {
         state.cartItems = [...state.cartItems, item];
@@ -30,15 +30,23 @@ const cartSlice = createSlice({
     },
     saveShippingAddress: (state, action) => {
       state.shippingAddress = action.payload;
-      localStorage.setItem('cart', JSON.stringify(state));
+      localStorage.setItem("cart", JSON.stringify(state));
     },
     savePaymentMethod: (state, action) => {
       state.paymentMethod = action.payload;
-      localStorage.setItem('cart', JSON.stringify(state));
+      localStorage.setItem("cart", JSON.stringify(state));
+    },
+    setCartItemQty: (state, action) => {
+      const { _id, qty } = action.payload;
+      const item = state.cartItems.find((x) => x._id === _id);
+      if (item) {
+        item.qty = qty;
+      }
+      return updateCart(state);
     },
     clearCartItems: (state, action) => {
       state.cartItems = [];
-      localStorage.setItem('cart', JSON.stringify(state));
+      localStorage.setItem("cart", JSON.stringify(state));
     },
 
     resetCart: (state) => (state = initialState),
@@ -48,6 +56,7 @@ const cartSlice = createSlice({
 export const {
   addToCart,
   removeFromCart,
+  setCartItemQty,
   saveShippingAddress,
   savePaymentMethod,
   clearCartItems,

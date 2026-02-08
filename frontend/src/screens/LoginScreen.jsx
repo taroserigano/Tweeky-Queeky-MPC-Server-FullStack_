@@ -1,13 +1,12 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Form, Button, Row, Col } from "react-bootstrap";
+import { Form } from "react-bootstrap";
 import { useDispatch, useSelector } from "react-redux";
 import Loader from "../components/Loader";
-import FormContainer from "../components/FormContainer";
 
 import { useLogin } from "../hooks";
 import { setCredentials } from "../slices/authSlice";
-import { toast } from "react-toastify";
+import { FiMail, FiLock, FiLogIn, FiArrowRight } from "react-icons/fi";
 
 const LoginScreen = () => {
   const [email, setEmail] = useState("");
@@ -39,54 +38,86 @@ const LoginScreen = () => {
           dispatch(setCredentials({ ...res }));
           navigate(redirect);
         },
-        onError: (err) => {
-          toast.error(err?.response?.data?.detail || err.message);
-        },
-      }
+        onError: () => {},
+      },
     );
   };
 
   return (
-    <FormContainer>
-      <h1>Sign In</h1>
+    <div className="auth-page fade-in">
+      <div className="auth-card">
+        <div className="auth-card__header">
+          <div className="auth-card__icon">
+            <FiLogIn />
+          </div>
+          <h1 className="auth-card__title">Welcome back</h1>
+          <p className="auth-card__subtitle">
+            Sign in to your account to continue
+          </p>
+        </div>
 
-      <Form onSubmit={submitHandler}>
-        <Form.Group className="my-2" controlId="email">
-          <Form.Label>Email Address</Form.Label>
-          <Form.Control
-            type="email"
-            placeholder="Enter email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          ></Form.Control>
-        </Form.Group>
+        <Form onSubmit={submitHandler} className="auth-card__form">
+          <div className="auth-input-group">
+            <label className="auth-input-group__label" htmlFor="email">
+              Email Address
+            </label>
+            <div className="auth-input-group__wrapper">
+              <FiMail className="auth-input-group__icon" />
+              <input
+                id="email"
+                type="email"
+                className="auth-input-group__input"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+          </div>
 
-        <Form.Group className="my-2" controlId="password">
-          <Form.Label>Password</Form.Label>
-          <Form.Control
-            type="password"
-            placeholder="Enter password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          ></Form.Control>
-        </Form.Group>
+          <div className="auth-input-group">
+            <label className="auth-input-group__label" htmlFor="password">
+              Password
+            </label>
+            <div className="auth-input-group__wrapper">
+              <FiLock className="auth-input-group__icon" />
+              <input
+                id="password"
+                type="password"
+                className="auth-input-group__input"
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+          </div>
 
-        <Button disabled={isLoading} type="submit" variant="primary">
-          Sign In
-        </Button>
+          <button
+            className="auth-card__submit"
+            disabled={isLoading}
+            type="submit"
+          >
+            {isLoading ? (
+              "Signing in..."
+            ) : (
+              <>
+                Sign In <FiArrowRight />
+              </>
+            )}
+          </button>
 
-        {isLoading && <Loader />}
-      </Form>
+          {isLoading && <Loader />}
+        </Form>
 
-      <Row className="py-3">
-        <Col>
-          New Customer?{" "}
+        <div className="auth-card__footer">
+          New customer?{" "}
           <Link to={redirect ? `/register?redirect=${redirect}` : "/register"}>
-            Register
+            Create an account <FiArrowRight />
           </Link>
-        </Col>
-      </Row>
-    </FormContainer>
+        </div>
+      </div>
+    </div>
   );
 };
 

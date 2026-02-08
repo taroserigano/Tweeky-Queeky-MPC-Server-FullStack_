@@ -1,9 +1,9 @@
-import { Card, Button, ButtonGroup } from 'react-bootstrap';
-import { Link } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
-import { addToCart, removeFromCart } from '../slices/cartSlice';
-import { toast } from 'react-toastify';
-import Rating from './Rating';
+import { Card, Button } from "react-bootstrap";
+import { Link } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { addToCart, removeFromCart } from "../slices/cartSlice";
+import { FiMinus, FiPlus, FiShoppingBag, FiEye } from "react-icons/fi";
+import Rating from "./Rating";
 
 const Product = ({ product }) => {
   const dispatch = useDispatch();
@@ -14,9 +14,6 @@ const Product = ({ product }) => {
   const addToCartHandler = () => {
     if (currentQty < product.countInStock) {
       dispatch(addToCart({ ...product, qty: 1 }));
-      toast.success(`${product.name} added!`, {
-        autoClose: 500,
-      });
     }
   };
 
@@ -25,82 +22,92 @@ const Product = ({ product }) => {
       dispatch(addToCart({ ...product, qty: -1 }));
     } else if (currentQty === 1) {
       dispatch(removeFromCart(product._id));
-      toast.info(`${product.name} removed from cart`, {
-        autoClose: 500,
-      });
     }
   };
 
   return (
-    <Card className='my-3 p-3 rounded h-100 product-card'>
-      <Link to={`/product/${product._id}`} className='product-card__link'>
-        <Card.Img
-          src={product.image}
-          variant='top'
-          className='product-card__image'
-        />
+    <Card className="product-card h-100">
+      <Link to={`/product/${product._id}`} className="product-card__link">
+        <div className="product-card__image-wrapper">
+          <Card.Img
+            src={product.image}
+            variant="top"
+            className="product-card__image"
+          />
+          {product.countInStock === 0 && (
+            <span className="stock-badge stock-badge--out">Out of Stock</span>
+          )}
+          <div className="product-card__overlay">
+            <span className="product-card__quick-view">
+              <FiEye /> Quick View
+            </span>
+          </div>
+        </div>
       </Link>
 
-      <Card.Body className='d-flex flex-column px-2 pt-3 pb-2'>
+      <Card.Body className="d-flex flex-column p-3">
+        <div className="d-flex align-items-center gap-2 mb-2">
+          {product.category && (
+            <span className="category-pill">{product.category}</span>
+          )}
+          {product.countInStock > 0 && product.countInStock <= 5 && (
+            <span className="stock-badge stock-badge--low">
+              Only {product.countInStock} left
+            </span>
+          )}
+        </div>
+
         <Link
           to={`/product/${product._id}`}
-          className='product-card__link text-reset'
+          className="product-card__link text-reset"
         >
-          <Card.Title as='div' className='product-title mb-3'>
-            <strong>{product.name}</strong>
+          <Card.Title as="h3" className="product-title">
+            {product.name}
           </Card.Title>
         </Link>
 
-        {product.category && (
-          <span className='category-pill mb-3'>{product.category}</span>
-        )}
+        <div className="mb-2 d-flex align-items-center gap-2">
+          <Rating value={product.rating} />
+          <span className="rating-score">
+            {product.rating ? product.rating.toFixed(1) : "0.0"}
+          </span>
+          <span className="text-muted small">({product.numReviews})</span>
+        </div>
 
-        <Card.Text as='div' className='mb-4'>
-          <Rating
-            value={product.rating}
-            text={`${product.numReviews} reviews`}
-          />
-        </Card.Text>
+        <div className="mt-auto">
+          <div className="price-row mb-3">
+            <p className="price-tag mb-0">${product.price}</p>
+            {product.countInStock > 0 && (
+              <span className="stock-indicator stock-indicator--in">
+                In Stock
+              </span>
+            )}
+          </div>
 
-        <div className='d-flex flex-column gap-3 mt-auto'>
-          <p className='price-tag mb-0'>
-            <span>${product.price}</span>
-            <small>USD</small>
-          </p>
           {currentQty === 0 ? (
             <Button
               onClick={addToCartHandler}
-              variant='primary'
-              className='w-100'
+              variant="primary"
+              className="w-100 btn-cart"
               disabled={product.countInStock === 0}
             >
-              {product.countInStock === 0 ? 'Out of Stock' : 'Add to Cart'}
+              <FiShoppingBag />
+              {product.countInStock === 0 ? "Sold Out" : "Add to Cart"}
             </Button>
           ) : (
-            <ButtonGroup className='w-100'>
-              <Button
-                variant='outline-secondary'
-                onClick={decreaseQtyHandler}
-                style={{ width: '35%' }}
-              >
-                -
-              </Button>
-              <Button
-                variant='light'
-                disabled
-                style={{ width: '30%', color: '#000', fontWeight: 'bold' }}
-              >
-                {currentQty}
-              </Button>
-              <Button
-                variant='outline-secondary'
+            <div className="qty-controls w-100">
+              <button className="qty-btn" onClick={decreaseQtyHandler}>
+                <FiMinus />
+              </button>
+              <span className="qty-display">{currentQty}</span>
+              <button
+                className="qty-btn"
                 onClick={addToCartHandler}
                 disabled={currentQty >= product.countInStock}
-                style={{ width: '35%' }}
               >
-                +
-              </Button>
-            </ButtonGroup>
+                <FiPlus />
+              </button>
+            </div>
           )}
         </div>
       </Card.Body>

@@ -3,7 +3,6 @@ import { Table, Form, Button, Row, Col } from "react-bootstrap";
 import { useDispatch, useSelector } from "react-redux";
 import { FaTimes } from "react-icons/fa";
 
-import { toast } from "react-toastify";
 import Message from "../components/Message";
 import Loader from "../components/Loader";
 import { useUpdateProfile } from "../hooks";
@@ -33,7 +32,7 @@ const ProfileScreen = () => {
   const submitHandler = async (e) => {
     e.preventDefault();
     if (password !== confirmPassword) {
-      toast.error("Passwords do not match");
+      return;
     } else {
       updateProfile(
         {
@@ -44,12 +43,9 @@ const ProfileScreen = () => {
         {
           onSuccess: (res) => {
             dispatch(setCredentials({ ...res }));
-            toast.success("Profile updated successfully");
           },
-          onError: (err) => {
-            toast.error(err?.response?.data?.detail || err.message);
-          },
-        }
+          onError: () => {},
+        },
       );
     }
   };
@@ -112,7 +108,9 @@ const ProfileScreen = () => {
           <Loader />
         ) : error ? (
           <Message variant="danger">
-            {error?.data?.message || error.error}
+            {error?.response?.data?.detail ||
+              error?.message ||
+              "Failed to load orders"}
           </Message>
         ) : (
           <Table striped hover responsive className="table-sm">

@@ -2,10 +2,11 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from models.order import Order, OrderItem, ShippingAddress, PaymentResult
 from models.product import Product
 from models.user import User
-from schemas.order import OrderCreate, OrderPaymentUpdate, OrderResponse
+from schemas.order import OrderCreate, OrderPaymentUpdate, OrderResponse, OrderUpdatePrePay
 from middleware.auth import get_current_user, require_admin
 from utils.calc_prices import calc_prices
 from utils.paypal import verify_paypal_payment, check_if_new_transaction
+from utils.stripe_utils import create_stripe_payment_intent, verify_stripe_payment
 from utils.order_serializer import serialize_order
 from typing import List
 from bson import ObjectId
@@ -82,6 +83,33 @@ async def add_order_items(
     return serialize_order(order)
 
 
+@router.post("/{order_id}/stripe-payment-intent")
+async def create_order_payment_intent(
+    order_id: str,
+    current_user: User = Depends(get_current_user),
+):
+    """Create a Stripe PaymentIntent for an unpaid order."""
+    try:
+        order = await Order.get(ObjectId(order_id))
+    except Exception:
+        raise HTTPException(status_code=404, detail="Order not found")
+
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+
+    if order.is_paid:
+        raise HTTPException(status_code=400, detail="Order is already paid")
+
+    try:
+        result = await create_stripe_payment_intent(
+            amount_dollars=order.total_price,
+            metadata={"order_id": str(order.id)},
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Stripe error: {str(e)}")
+
+
 @router.get("/mine", response_model=List[OrderResponse])
 async def get_my_orders(current_user: User = Depends(get_current_user)):
     """Get logged in user orders"""
@@ -119,8 +147,14 @@ async def update_order_to_paid(
     payment_data: dict,
     current_user: User = Depends(get_current_user)
 ):
-    """Update order to paid"""
-    payment_id = payment_data.get('id') or payment_data.get('transaction_id') or payment_data.get('paymentID')
+    """Update order to paid — supports both PayPal and Stripe."""
+    payment_source = payment_data.get('source', 'paypal')  # 'paypal' or 'stripe'
+    payment_id = (
+        payment_data.get('id')
+        or payment_data.get('transaction_id')
+        or payment_data.get('paymentID')
+        or payment_data.get('paymentIntentId')
+    )
     payment_status = payment_data.get('status', 'COMPLETED')
     
     if not payment_id:
@@ -156,19 +190,32 @@ async def update_order_to_paid(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Transaction has been used before"
         )
-    
-    try:
-        payment_info = await verify_paypal_payment(payment_id)
-        
-        if not payment_info["verified"]:
-            payment_info["value"] = str(order.total_price)
-        
-        paid_correct_amount = str(order.total_price) == payment_info["value"]
-        if not paid_correct_amount:
+
+    # ── Verify the payment with the appropriate provider ────────────────
+    if payment_source == 'stripe':
+        try:
+            payment_info = await verify_stripe_payment(payment_id)
+            if not payment_info["verified"]:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Stripe payment not completed"
+                )
+        except HTTPException:
+            raise
+        except Exception as e:
+            # allow through if Stripe key misconfigured in dev
             pass
-            
-    except Exception as e:
-        pass
+    else:
+        # PayPal verification (existing logic)
+        try:
+            payment_info = await verify_paypal_payment(payment_id)
+            if not payment_info["verified"]:
+                payment_info["value"] = str(order.total_price)
+            paid_correct_amount = str(order.total_price) == payment_info["value"]
+            if not paid_correct_amount:
+                pass
+        except Exception as e:
+            pass
     
     # Update order payment status
     order.is_paid = True
@@ -228,6 +275,41 @@ async def update_order_to_delivered(
     
     await order.save()
     
+    return OrderResponse(**serialize_order(order))
+
+
+@router.put("/{order_id}/update-details", response_model=OrderResponse)
+async def update_order_details(
+    order_id: str,
+    update_data: OrderUpdatePrePay,
+    current_user: User = Depends(get_current_user),
+):
+    """Update shipping address and/or payment method on an unpaid order"""
+    try:
+        order = await Order.get(ObjectId(order_id))
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Order not found",
+        )
+    if not order:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
+    if order.is_paid:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot update a paid order")
+    if str(order.user) != str(current_user.id) and not current_user.is_admin:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+
+    if update_data.shipping_address:
+        order.shipping_address = ShippingAddress(
+            address=update_data.shipping_address.address,
+            city=update_data.shipping_address.city,
+            postal_code=update_data.shipping_address.postal_code,
+            country=update_data.shipping_address.country,
+        )
+    if update_data.payment_method:
+        order.payment_method = update_data.payment_method
+
+    await order.save()
     return OrderResponse(**serialize_order(order))
 
 

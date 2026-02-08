@@ -1,7 +1,7 @@
 from beanie import Document, PydanticObjectId, Link
 from pydantic import Field, ConfigDict
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 
 
 class Review(Document):
@@ -20,11 +20,14 @@ class Review(Document):
 
 class Product(Document):
     user: PydanticObjectId
+    sku: Optional[str] = Field(default=None)
     name: str
     image: str
     brand: str
     category: str
     description: str
+    detailed_description: Optional[str] = Field(default=None, alias="detailedDescription")
+    specifications: Optional[Dict[str, Any]] = Field(default=None)
     reviews: List[Link[Review]] = Field(default_factory=list)
     rating: float = Field(default=0, ge=0, le=5)
     num_reviews: int = Field(default=0, alias="numReviews")
@@ -38,7 +41,7 @@ class Product(Document):
         json_schema_extra={
             "example": {
                 "name": "Sample Product",
-                "image": "/images/sample.jpg",
+                "image": "/images/sample.png",
                 "brand": "Sample Brand",
                 "category": "Electronics",
                 "description": "Sample description",

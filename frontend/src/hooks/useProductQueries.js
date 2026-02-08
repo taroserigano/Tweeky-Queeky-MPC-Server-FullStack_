@@ -7,13 +7,14 @@ const api = axios.create({
   withCredentials: true,
 });
 
-export const useProducts = (keyword = "", pageNumber = 1) => {
+export const useProducts = (keyword = "", pageNumber = 1, sortBy = "") => {
   return useQuery({
-    queryKey: ["products", keyword, pageNumber],
+    queryKey: ["products", keyword, pageNumber, sortBy],
     queryFn: async () => {
       const params = {};
       if (keyword) params.keyword = keyword;
       if (pageNumber) params.pageNumber = pageNumber;
+      if (sortBy) params.sortBy = sortBy;
 
       const { data } = await api.get(PRODUCTS_URL, { params });
       return data;

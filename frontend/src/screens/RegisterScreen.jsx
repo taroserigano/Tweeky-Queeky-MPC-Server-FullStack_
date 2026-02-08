@@ -1,13 +1,18 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Form, Button, Row, Col } from "react-bootstrap";
+import { Form } from "react-bootstrap";
 import { useDispatch, useSelector } from "react-redux";
 import Loader from "../components/Loader";
-import FormContainer from "../components/FormContainer";
 
 import { useRegister } from "../hooks";
 import { setCredentials } from "../slices/authSlice";
-import { toast } from "react-toastify";
+import {
+  FiUser,
+  FiMail,
+  FiLock,
+  FiUserPlus,
+  FiArrowRight,
+} from "react-icons/fi";
 
 const RegisterScreen = () => {
   const [name, setName] = useState("");
@@ -36,7 +41,7 @@ const RegisterScreen = () => {
     e.preventDefault();
 
     if (password !== confirmPassword) {
-      toast.error("Passwords do not match");
+      return;
     } else {
       register(
         { name, email, password },
@@ -45,73 +50,126 @@ const RegisterScreen = () => {
             dispatch(setCredentials({ ...res }));
             navigate(redirect);
           },
-          onError: (err) => {
-            toast.error(err?.response?.data?.detail || err.message);
-          },
-        }
+          onError: () => {},
+        },
       );
     }
   };
 
   return (
-    <FormContainer>
-      <h1>Register</h1>
-      <Form onSubmit={submitHandler}>
-        <Form.Group className="my-2" controlId="name">
-          <Form.Label>Name</Form.Label>
-          <Form.Control
-            type="name"
-            placeholder="Enter name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          ></Form.Control>
-        </Form.Group>
+    <div className="auth-page fade-in">
+      <div className="auth-card">
+        <div className="auth-card__header">
+          <div className="auth-card__icon">
+            <FiUserPlus />
+          </div>
+          <h1 className="auth-card__title">Create an account</h1>
+          <p className="auth-card__subtitle">
+            Join us and start shopping today
+          </p>
+        </div>
 
-        <Form.Group className="my-2" controlId="email">
-          <Form.Label>Email Address</Form.Label>
-          <Form.Control
-            type="email"
-            placeholder="Enter email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          ></Form.Control>
-        </Form.Group>
+        <Form onSubmit={submitHandler} className="auth-card__form">
+          <div className="auth-input-group">
+            <label className="auth-input-group__label" htmlFor="name">
+              Full Name
+            </label>
+            <div className="auth-input-group__wrapper">
+              <FiUser className="auth-input-group__icon" />
+              <input
+                id="name"
+                type="text"
+                className="auth-input-group__input"
+                placeholder="John Doe"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+            </div>
+          </div>
 
-        <Form.Group className="my-2" controlId="password">
-          <Form.Label>Password</Form.Label>
-          <Form.Control
-            type="password"
-            placeholder="Enter password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          ></Form.Control>
-        </Form.Group>
-        <Form.Group className="my-2" controlId="confirmPassword">
-          <Form.Label>Confirm Password</Form.Label>
-          <Form.Control
-            type="password"
-            placeholder="Confirm password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-          ></Form.Control>
-        </Form.Group>
+          <div className="auth-input-group">
+            <label className="auth-input-group__label" htmlFor="email">
+              Email Address
+            </label>
+            <div className="auth-input-group__wrapper">
+              <FiMail className="auth-input-group__icon" />
+              <input
+                id="email"
+                type="email"
+                className="auth-input-group__input"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+          </div>
 
-        <Button disabled={isLoading} type="submit" variant="primary">
-          Register
-        </Button>
+          <div className="auth-input-group">
+            <label className="auth-input-group__label" htmlFor="password">
+              Password
+            </label>
+            <div className="auth-input-group__wrapper">
+              <FiLock className="auth-input-group__icon" />
+              <input
+                id="password"
+                type="password"
+                className="auth-input-group__input"
+                placeholder="Create a password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+          </div>
 
-        {isLoading && <Loader />}
-      </Form>
+          <div className="auth-input-group">
+            <label
+              className="auth-input-group__label"
+              htmlFor="confirmPassword"
+            >
+              Confirm Password
+            </label>
+            <div className="auth-input-group__wrapper">
+              <FiLock className="auth-input-group__icon" />
+              <input
+                id="confirmPassword"
+                type="password"
+                className="auth-input-group__input"
+                placeholder="Confirm your password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+              />
+            </div>
+          </div>
 
-      <Row className="py-3">
-        <Col>
+          <button
+            className="auth-card__submit"
+            disabled={isLoading}
+            type="submit"
+          >
+            {isLoading ? (
+              "Creating account..."
+            ) : (
+              <>
+                Create Account <FiArrowRight />
+              </>
+            )}
+          </button>
+
+          {isLoading && <Loader />}
+        </Form>
+
+        <div className="auth-card__footer">
           Already have an account?{" "}
           <Link to={redirect ? `/login?redirect=${redirect}` : "/login"}>
-            Login
+            Sign in <FiArrowRight />
           </Link>
-        </Col>
-      </Row>
-    </FormContainer>
+        </div>
+      </div>
+    </div>
   );
 };
 
