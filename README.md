@@ -1,6 +1,6 @@
 # 🛒 Agentic AI E-Commerce Platform - Tweeky-Queeky-Shop
 
-> **Portfolio project showcasing a modern FastAPI + React e-commerce system (Docker-ready, async backend, hybrid search, payments, and admin tooling).**
+> **Portfolio project showcasing a modern FastAPI + React e-commerce system (Dockerized, async backend, hybrid search, payments, and admin tooling).**
 
 Production-style full-stack e-commerce app built with **FastAPI (Python)**, **React 18**, **MongoDB**, and **Docker**. Includes JWT auth, PayPal/Stripe-ready checkout flow, admin dashboard, image uploads, and an MCP tool server for agentic workflows.
 
