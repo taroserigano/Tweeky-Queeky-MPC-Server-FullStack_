@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Form, Button } from "react-bootstrap";
 import Message from "../../components/Message";
 import Loader from "../../components/Loader";
+import { getErrorMessage } from "../../utils/errorUtils";
 import FormContainer from "../../components/FormContainer";
 import { useParams } from "react-router-dom";
 import { useUserDetails, useUpdateUser } from "../../hooks";
@@ -53,9 +54,7 @@ const UserEditScreen = () => {
           <Loader />
         ) : error ? (
           <Message variant="danger">
-            {error?.response?.data?.detail ||
-              error?.message ||
-              "Failed to load user"}
+            {getErrorMessage(error, "Failed to load user")}
           </Message>
         ) : (
           <Form onSubmit={submitHandler}>

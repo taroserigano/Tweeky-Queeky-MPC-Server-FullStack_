@@ -24,12 +24,13 @@ def generate_token(response: Response, user_id: str):
     token = create_access_token(user_id)
     
     # Set cookie with same settings as Node.js version
+    # Use 'lax' samesite for cross-origin support (ECS Fargate has different IPs)
     response.set_cookie(
         key="jwt",
         value=token,
         httponly=True,
-        secure=settings.NODE_ENV != "development",  # True in production
-        samesite="lax" if settings.NODE_ENV == "development" else "strict",  # Lax in dev for cross-origin
+        secure=False,  # Set to False for HTTP (ECS without ALB/HTTPS)
+        samesite="lax",  # Allow cross-site GET requests (needed for different IPs)
         max_age=settings.JWT_EXPIRE_DAYS * 24 * 60 * 60,  # 30 days in seconds
         path="/",  # Available on all routes
     )

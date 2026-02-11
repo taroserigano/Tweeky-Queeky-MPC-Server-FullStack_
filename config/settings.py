@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     OPEN_AI: Optional[str] = None  # Legacy key name
     OPENAI_API_KEY: Optional[str] = None
     OPENAI_MODEL: str = "gpt-4o-mini"
-    OPENAI_EMBEDDING_MODEL: str = "text-embedding-3-large"
+    OPENAI_EMBEDDING_MODEL: str = "text-embedding-3-small"
     
     # Anthropic
     ANTHROPIC_API_KEY: Optional[str] = None
@@ -57,7 +57,7 @@ class Settings(BaseSettings):
     # OpenAI text-embedding-3-large: 3072
     # OpenAI text-embedding-3-small: 1536
     # Sentence Transformers e5-large-v2: 1024
-    EMBEDDING_DIMENSION: int = 3072
+    EMBEDDING_DIMENSION: int = 1536
 
     # ──────────────────────────────────────────────────────────────────────────
     # PINECONE VECTOR DB
@@ -72,7 +72,7 @@ class Settings(BaseSettings):
     # RAG SETTINGS
     # ──────────────────────────────────────────────────────────────────────────
     RAG_TOP_K: int = 10  # Number of results to retrieve
-    RAG_SIMILARITY_THRESHOLD: float = 0.7  # Minimum similarity score
+    RAG_SIMILARITY_THRESHOLD: float = 0.3  # Minimum similarity score
     RAG_RERANK_ENABLED: bool = True  # Enable reranking
 
     @property

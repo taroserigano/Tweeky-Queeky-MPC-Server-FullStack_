@@ -12,6 +12,7 @@ import {
 import { useDispatch, useSelector } from "react-redux";
 import Message from "../components/Message";
 import Loader from "../components/Loader";
+import { getErrorMessage } from "../utils/errorUtils";
 import { useCreateOrder } from "../hooks/useOrderQueries";
 import {
   saveShippingAddress,
@@ -23,14 +24,15 @@ const CheckoutScreen = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const cart = useSelector((state) => state.cart);
+  const shippingAddress = cart.shippingAddress || {};
 
   // Shipping address state
-  const [address, setAddress] = useState(cart.shippingAddress.address || "");
-  const [city, setCity] = useState(cart.shippingAddress.city || "");
+  const [address, setAddress] = useState(shippingAddress.address || "");
+  const [city, setCity] = useState(shippingAddress.city || "");
   const [postalCode, setPostalCode] = useState(
-    cart.shippingAddress.postalCode || "",
+    shippingAddress.postalCode || "",
   );
-  const [country, setCountry] = useState(cart.shippingAddress.country || "");
+  const [country, setCountry] = useState(shippingAddress.country || "");
 
   // Payment method state
   const [paymentMethod, setPaymentMethod] = useState(
@@ -49,24 +51,33 @@ const CheckoutScreen = () => {
     dispatch(saveShippingAddress({ address, city, postalCode, country }));
     dispatch(savePaymentMethod(paymentMethod));
 
-    createOrder(
-      {
-        orderItems: cart.cartItems,
-        shippingAddress: { address, city, postalCode, country },
-        paymentMethod,
-        itemsPrice: cart.itemsPrice,
-        shippingPrice: cart.shippingPrice,
-        taxPrice: cart.taxPrice,
-        totalPrice: cart.totalPrice,
-      },
-      {
-        onSuccess: (res) => {
-          dispatch(clearCartItems());
-          navigate(`/order/${res._id}`);
-        },
-        onError: () => {},
-      },
+    // Map cart items to order items format
+    const orderItems = cart.cartItems.map((item) => ({
+      name: item.name,
+      qty: item.qty,
+      image: item.image,
+      price: item.price,
+      product: item._id || item.product, // Use _id as product ID
+    }));
+
+    const orderPayload = {
+      orderItems,
+      shippingAddress: { address, city, postalCode, country },
+      paymentMethod,
+    };
+
+    console.log(
+      "Placing order with payload:",
+      JSON.stringify(orderPayload, null, 2),
     );
+
+    createOrder(orderPayload, {
+      onSuccess: (res) => {
+        dispatch(clearCartItems());
+        navigate(`/order/${res._id}`);
+      },
+      onError: () => {},
+    });
   };
 
   return (
@@ -220,10 +231,7 @@ const CheckoutScreen = () => {
             <ListGroup.Item>
               {error && (
                 <Message variant="danger">
-                  {error?.response?.data?.detail ||
-                    error?.data?.message ||
-                    error?.message ||
-                    "An error occurred"}
+                  {getErrorMessage(error, "An error occurred")}
                 </Message>
               )}
             </ListGroup.Item>

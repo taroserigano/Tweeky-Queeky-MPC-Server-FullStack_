@@ -53,30 +53,10 @@ const CartScreen = () => {
 
   const checkoutHandler = () => {
     if (!userInfo) {
-      navigate("/login?redirect=/cart");
-      return;
+      navigate("/login?redirect=/checkout");
+    } else {
+      navigate("/checkout");
     }
-
-    createOrder(
-      {
-        orderItems: cartItems,
-        shippingAddress: cart.shippingAddress?.address
-          ? cart.shippingAddress
-          : { address: "", city: "", postalCode: "", country: "" },
-        paymentMethod: cart.paymentMethod || "Stripe",
-        itemsPrice: cart.itemsPrice,
-        shippingPrice: cart.shippingPrice,
-        taxPrice: cart.taxPrice,
-        totalPrice: cart.totalPrice,
-      },
-      {
-        onSuccess: (res) => {
-          dispatch(clearCartItems());
-          navigate(`/order/${res._id}`);
-        },
-        onError: () => {},
-      },
-    );
   };
 
   return (

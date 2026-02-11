@@ -528,11 +528,9 @@ const AIAssistantScreen = () => {
     sentimentErrorData,
   );
 
-  // Auto-scroll only when receiving assistant messages
+  // Auto-scroll when messages change
   useEffect(() => {
-    if (messages.length > 0 && messages[messages.length - 1].role === "assistant") {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   const handleSend = async () => {

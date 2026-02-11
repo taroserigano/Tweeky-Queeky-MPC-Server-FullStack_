@@ -4,6 +4,7 @@ import { Link, useParams } from "react-router-dom";
 import Message from "../../components/Message";
 import Loader from "../../components/Loader";
 import Paginate from "../../components/Paginate";
+import { getErrorMessage } from "../../utils/errorUtils";
 import {
   useProducts,
   useDeleteProduct,
@@ -64,7 +65,9 @@ const ProductListScreen = () => {
       {isLoading ? (
         <Loader />
       ) : error ? (
-        <Message variant="danger">{error.data.message}</Message>
+        <Message variant="danger">
+          {getErrorMessage(error, "Failed to load products")}
+        </Message>
       ) : (
         <>
           <Table striped bordered hover responsive className="table-sm">

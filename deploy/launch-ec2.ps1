@@ -88,7 +88,7 @@ if ([string]::IsNullOrEmpty($SG_ID) -or $SG_ID -eq "None") {
 Write-Host "`nLaunching EC2 instance..." -ForegroundColor Yellow
 
 # Read user-data file
-$USER_DATA = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes((Get-Content -Path "deploy\ec2-user-data.sh" -Raw)))
+$USER_DATA = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes((Get-Content -Path "ec2-user-data.sh" -Raw)))
 
 $INSTANCE_ID = aws ec2 run-instances `
     --image-id $AMI_ID `

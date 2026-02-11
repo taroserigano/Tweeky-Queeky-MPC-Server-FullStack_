@@ -8,6 +8,7 @@ import {
 } from "react-icons/fi";
 import { useState, useEffect, useCallback, useRef } from "react";
 import Message from "./Message";
+import { getErrorMessage } from "../utils/errorUtils";
 import { useTopProducts } from "../hooks/useProductQueries";
 
 const CarouselSkeleton = () => (
@@ -93,7 +94,9 @@ const ProductCarousel = () => {
   if (isLoading) return <CarouselSkeleton />;
   if (error)
     return (
-      <Message variant="danger">{error?.data?.message || error.error}</Message>
+      <Message variant="danger">
+        {getErrorMessage(error, "Failed to load carousel")}
+      </Message>
     );
   if (!products || products.length === 0) return null;
 

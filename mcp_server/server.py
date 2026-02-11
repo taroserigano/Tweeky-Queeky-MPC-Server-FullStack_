@@ -60,6 +60,8 @@ def _product_detail(product: Product) -> Dict[str, Any]:
     return {
         **_product_summary(product),
         "description": product.description,
+        "detailed_description": product.detailed_description,
+        "specifications": product.specifications,
         "created_at": product.created_at.isoformat(),
         "updated_at": product.updated_at.isoformat(),
     }

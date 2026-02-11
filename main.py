@@ -2,11 +2,15 @@ from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.exceptions import RequestValidationError
 from contextlib import asynccontextmanager
 from pathlib import Path
 import os
 import signal
 import sys
+import logging
+
+logger = logging.getLogger(__name__)
 
 from config.database import init_db, close_db
 from config.settings import settings
@@ -64,12 +68,33 @@ app.add_middleware(
         "http://localhost:3001",
         "http://127.0.0.1:3000",
         "http://127.0.0.1:3001",
+        "http://18.118.137.212",  # Frontend ECS Fargate public IP
+        "*"  # Allow all origins in production (or specify your domain)
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["*"]
 )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """Log validation errors with request body for debugging"""
+    try:
+        body_str = exc.body if exc.body else "<no body>"
+    except Exception:
+        body_str = "<could not read body>"
+    
+    logger.error(f"[VALIDATION ERROR] {request.method} {request.url}")
+    logger.error(f"[VALIDATION ERROR] Body: {body_str}")
+    logger.error(f"[VALIDATION ERROR] Errors: {exc.errors()}")
+    
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content={"detail": exc.errors()},
+    )
+
 
 # Mount static files for uploads
 upload_dir = Path("uploads")
@@ -152,13 +177,17 @@ async def mcp_status():
 @app.get("/api/config/paypal")
 async def get_paypal_config():
     """Get PayPal client ID"""
-    return {"clientId": settings.PAYPAL_CLIENT_ID}
+    client_id = settings.PAYPAL_CLIENT_ID or ""
+    print(f"[CONFIG] PayPal Client ID: {client_id[:20] if client_id else 'NOT SET'}...")
+    return {"clientId": client_id}
 
 
 @app.get("/api/config/stripe")
 async def get_stripe_config():
     """Get Stripe publishable key"""
-    return {"publishableKey": settings.STRIPE_PUBLISHABLE_KEY or ""}
+    key = settings.STRIPE_PUBLISHABLE_KEY or ""
+    print(f"[CONFIG] Stripe Publishable Key: {key[:20] if key else 'NOT SET'}...")
+    return {"publishableKey": key}
 
 
 @app.exception_handler(Exception)

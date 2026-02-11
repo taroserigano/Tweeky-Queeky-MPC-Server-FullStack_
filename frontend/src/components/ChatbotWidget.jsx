@@ -194,10 +194,8 @@ const ChatbotWidget = () => {
   };
 
   useEffect(() => {
-    if (messages[messages.length - 1]?.role === "assistant") {
-      scrollToBottom();
-    }
-  }, [messages]);
+    scrollToBottom();
+  }, [messages, isLoading]);
 
   useEffect(() => {
     if (isOpen && !isMinimized) {
@@ -244,6 +242,7 @@ const ChatbotWidget = () => {
       }
 
       const data = await response.json();
+      console.log("[ChatbotWidget] Response:", data);
 
       // Process cart actions — add items to Redux store
       if (data.cart_actions && data.cart_actions.length > 0) {
@@ -266,13 +265,12 @@ const ChatbotWidget = () => {
 
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (error) {
-      console.error("Chat error:", error);
+      console.error("[ChatbotWidget] Chat error:", error);
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          content:
-            "Sorry, I'm having trouble connecting. Please try again later.",
+          content: `Sorry, I encountered an error: ${error.message || "Unknown error"}. Please try again.`,
           timestamp: new Date(),
         },
       ]);
@@ -298,10 +296,10 @@ const ChatbotWidget = () => {
   };
 
   const quickActions = [
-    "Show me wireless headphones",
-    "What's the best laptop for work?",
-    "Compare gaming chairs under $300",
-    "Do you offer free shipping?",
+    "Show me 2 products under $150",
+    "I need a microphone for podcasting",
+    "Show me best rating products",
+    "show me music products",
   ];
 
   const handleQuickAction = (action) => {

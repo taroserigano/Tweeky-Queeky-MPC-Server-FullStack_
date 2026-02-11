@@ -162,9 +162,20 @@ def semantic_search(
     top_k: int = 5,
 ) -> str:
     """Search for products using natural language. Understands intent and context.
-    Use for queries like 'comfortable chair for work' or 'gift for music lover'."""
+    Use for queries like 'comfortable chair for work' or 'gift for music lover'.
+    IMPORTANT: Do NOT pass product types like 'headphones', 'earbuds', 'keyboards' as category.
+    Valid categories are broad store sections: 'Electronics', 'Furniture', 'Sports', 'Music', 'Home'.
+    Instead, include the product type in the query text for best results."""
     
     from services.hybrid_search import hybrid_engine
+    
+    # Validate category against known store categories to prevent false filtering.
+    # Product types like "headphones" are NOT categories — they belong in the query.
+    VALID_CATEGORIES = {"electronics", "furniture", "sports", "music", "home"}
+    if category and category.lower() not in VALID_CATEGORIES:
+        # Append the invalid category to the query as a search term instead
+        query = f"{query} {category}"
+        category = None
     
     # Use hybrid search (BM25 + semantic + RRF) for better relevance
     results = hybrid_engine.search(
@@ -176,14 +187,42 @@ def semantic_search(
         min_rating=min_rating,
     )
     
+    # Post-filter: Exclude Recording Equipment from headphone/earphone queries
+    # This prevents audio interfaces from appearing in headphone searches
+    if any(term in query.lower() for term in ['headphone', 'headphones', 'earphone', 'earphones', 'earbud', 'earbuds']):
+        results = [r for r in results if r.get('category', '').lower() not in [
+            'recording equipment',
+            'audio interface', 
+            'studio equipment',
+            'recording gear'
+        ]]
+    
     if not results:
-        # Fallback to direct DB search using PyMongo
+        # Fallback to direct DB text search using PyMongo
+        # Only search by name and category (not description — too loose)
         db = _get_sync_db()
         filter_query = {}
         if category:
             filter_query["category"] = {"$regex": category, "$options": "i"}
         
+        # Use focused keyword search — only match on name and category, not description
+        # This prevents random products matching common words like "work", "best", etc.
+        stop_words = {'best', 'good', 'great', 'for', 'the', 'with', 'and', 'work',
+                      'what', 'which', 'find', 'show', 'get', 'me', 'my', 'some'}
+        search_words = [w for w in query.split() if len(w) > 2 and w.lower() not in stop_words]
+        if search_words and not category:
+            or_conditions = []
+            for word in search_words:
+                or_conditions.append({"name": {"$regex": word, "$options": "i"}})
+                or_conditions.append({"category": {"$regex": word, "$options": "i"}})
+                or_conditions.append({"brand": {"$regex": word, "$options": "i"}})
+            if or_conditions:
+                filter_query["$or"] = or_conditions
+        
         products = list(db.products.find(filter_query).limit(top_k))
+        
+        # Do NOT return all products as a last resort — that shows irrelevant items.
+        # If nothing matches, tell the user honestly.
         if not products:
             return json.dumps({"text": "No products found matching your criteria.", "products": []})
         
@@ -838,8 +877,15 @@ class ShoppingAgentLangGraph:
                 if msg.content:
                     try:
                         parsed = json.loads(msg.content)
-                        if isinstance(parsed, dict) and "products" in parsed:
-                            for prod in parsed["products"]:
+                        if isinstance(parsed, dict):
+                            # Handle both "products" (list) and "product" (single dict)
+                            product_list = []
+                            if "products" in parsed:
+                                product_list = parsed["products"]
+                            elif "product" in parsed and isinstance(parsed["product"], dict):
+                                product_list = [parsed["product"]]
+                            
+                            for prod in product_list:
                                 pid = prod.get("id") or prod.get("_id") or prod.get("name")
                                 if pid and pid not in seen_product_ids:
                                     seen_product_ids.add(pid)

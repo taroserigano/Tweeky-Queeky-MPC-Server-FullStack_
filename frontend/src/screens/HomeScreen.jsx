@@ -2,6 +2,7 @@ import { Container, Form } from "react-bootstrap";
 import { useParams, Link } from "react-router-dom";
 import { useState } from "react";
 import { useProducts } from "../hooks/useProductQueries";
+import { getErrorMessage } from "../utils/errorUtils";
 import {
   FiArrowLeft,
   FiGrid,
@@ -58,10 +59,7 @@ const HomeScreen = () => {
         </>
       ) : error ? (
         <Message variant="danger">
-          {error?.response?.data?.detail ||
-            error?.response?.data?.message ||
-            error?.message ||
-            "Failed to load products"}
+          {getErrorMessage(error, "Failed to load products")}
         </Message>
       ) : (
         <>

@@ -21,6 +21,7 @@ import CartScreen from "./screens/CartScreen";
 import LoginScreen from "./screens/LoginScreen";
 import RegisterScreen from "./screens/RegisterScreen";
 import OrderScreen from "./screens/OrderScreen";
+import CheckoutScreen from "./screens/CheckoutScreen";
 import ProfileScreen from "./screens/ProfileScreen";
 import OrderListScreen from "./screens/admin/OrderListScreen";
 import ProductListScreen from "./screens/admin/ProductListScreen";
@@ -69,6 +70,7 @@ const router = createBrowserRouter(
       <Route path="/test-react-query" element={<ReactQueryTest />} />
       {/* Registered users */}
       <Route path="" element={<PrivateRoute />}>
+        <Route path="/checkout" element={<CheckoutScreen />} />
         <Route path="/order/:id" element={<OrderScreen />} />
         <Route path="/profile" element={<ProfileScreen />} />
       </Route>

@@ -11,6 +11,9 @@ from utils.order_serializer import serialize_order
 from typing import List
 from bson import ObjectId
 from datetime import datetime
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/orders", tags=["orders"])
 
@@ -21,11 +24,24 @@ async def add_order_items(
     current_user: User = Depends(get_current_user)
 ):
     """Create new order"""
+    logger.info(f"[ORDER CREATE] Parsed order_data: items={len(order_data.order_items)}, "
+                f"shipping={order_data.shipping_address}, payment={order_data.payment_method}")
+    for i, item in enumerate(order_data.order_items):
+        logger.info(f"[ORDER CREATE] Item {i}: name={item.name}, qty={item.qty}, price={item.price}, product={item.product}")
+    
     if not order_data.order_items or len(order_data.order_items) == 0:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="No order items"
         )
+    
+    # Validate all items have a product ID
+    for item in order_data.order_items:
+        if not item.product:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Order item '{item.name}' is missing a product ID"
+            )
     
     item_ids = [ObjectId(item.product) for item in order_data.order_items]
     items_from_db = await Product.find({"_id": {"$in": item_ids}}).to_list()
@@ -78,7 +94,16 @@ async def add_order_items(
         total_price=prices["totalPrice"]
     )
     
-    await order.save()
+    logger.info(f"[ORDER CREATE] Saving order to database for user {current_user.id}...")
+    try:
+        await order.save()
+        logger.info(f"[ORDER CREATE] Order saved successfully: {order.id}")
+    except Exception as e:
+        logger.error(f"[ORDER CREATE] Failed to save order: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create order: {str(e)}"
+        )
     
     return serialize_order(order)
 
@@ -147,15 +172,18 @@ async def update_order_to_paid(
     payment_data: dict,
     current_user: User = Depends(get_current_user)
 ):
-    """Update order to paid — supports both PayPal and Stripe."""
-    payment_source = payment_data.get('source', 'paypal')  # 'paypal' or 'stripe'
+    """Update order to paid — supports PayPal, Stripe, and test payments."""
+    payment_source = payment_data.get('source', 'paypal')  # 'paypal', 'stripe', or 'test'
     payment_id = (
         payment_data.get('id')
         or payment_data.get('transaction_id')
         or payment_data.get('paymentID')
         or payment_data.get('paymentIntentId')
+        or f"TEST-{int(datetime.utcnow().timestamp())}"  # Generate test ID for development
     )
     payment_status = payment_data.get('status', 'COMPLETED')
+    
+    print(f"[PAYMENT] Order {order_id}: source={payment_source}, payment_id={payment_id}")
     
     if not payment_id:
         raise HTTPException(
@@ -192,7 +220,11 @@ async def update_order_to_paid(
         )
 
     # ── Verify the payment with the appropriate provider ────────────────
-    if payment_source == 'stripe':
+    if payment_source == 'test':
+        # Test payment for development - skip external verification
+        print(f"[PAYMENT] Test payment accepted for order {order_id}")
+        pass
+    elif payment_source == 'stripe':
         try:
             payment_info = await verify_stripe_payment(payment_id)
             if not payment_info["verified"]:
@@ -204,6 +236,7 @@ async def update_order_to_paid(
             raise
         except Exception as e:
             # allow through if Stripe key misconfigured in dev
+            print(f"[PAYMENT] Stripe verification error (allowing in dev): {e}")
             pass
     else:
         # PayPal verification (existing logic)
@@ -213,8 +246,10 @@ async def update_order_to_paid(
                 payment_info["value"] = str(order.total_price)
             paid_correct_amount = str(order.total_price) == payment_info["value"]
             if not paid_correct_amount:
+                print(f"[PAYMENT] Amount mismatch (allowing in dev): expected {order.total_price}, got {payment_info['value']}")
                 pass
         except Exception as e:
+            print(f"[PAYMENT] PayPal verification error (allowing in dev): {e}")
             pass
     
     # Update order payment status
@@ -274,6 +309,48 @@ async def update_order_to_delivered(
     order.delivered_at = datetime.utcnow()
     
     await order.save()
+    
+    return OrderResponse(**serialize_order(order))
+
+
+@router.put("/{order_id}/mark-paid", response_model=OrderResponse)
+async def mark_order_paid_manually(
+    order_id: str,
+    admin_user: User = Depends(require_admin)
+):
+    """Manually mark order as paid (Admin only - for testing or manual payments)"""
+    try:
+        order = await Order.get(ObjectId(order_id))
+    except:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Order not found"
+        )
+    
+    if not order:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Order not found"
+        )
+    
+    if order.is_paid:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Order is already paid"
+        )
+    
+    order.is_paid = True
+    order.paid_at = datetime.utcnow()
+    order.payment_result = PaymentResult(
+        id=f"MANUAL-{int(datetime.utcnow().timestamp())}",
+        status="COMPLETED",
+        update_time=datetime.utcnow().isoformat(),
+        email_address=admin_user.email
+    )
+    
+    await order.save()
+    
+    print(f"[ADMIN] Order {order_id} manually marked as paid by {admin_user.email}")
     
     return OrderResponse(**serialize_order(order))
 

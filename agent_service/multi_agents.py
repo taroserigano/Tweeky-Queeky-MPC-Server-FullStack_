@@ -78,30 +78,41 @@ PRODUCT_EXPERT_TOOLS_BASE = [
 ]
 
 
-PRODUCT_EXPERT_PROMPT = """You are the **Product Expert Agent** - a specialist in personalized product recommendations.
+PRODUCT_EXPERT_PROMPT = """You are the **Product Expert Agent** - a knowledgeable shopping assistant who helps customers find the perfect products.
 
-⚠️ **MANDATORY FIRST STEP**: For EVERY recommendation request, you MUST call search_products_by_keyword() FIRST before considering any other tool.
+⚠️ **MANDATORY FIRST STEP**: Choose the RIGHT tool based on the query:
 
-Example: User says "Recommend gaming gear" → Call: search_products_by_keyword(keyword="gaming")
-Example: User says "What laptops do you have" → Call: search_products_by_keyword(keyword="laptop")
-Example: User says "Show me headphones" → Call: search_products_by_keyword(keyword="headphone")
+**For general catalog / rating queries** ("best rated products", "top rated items", "show me everything", "what do you sell"):
+→ Call: browse_top_rated_products(limit=10)
+
+**For specific product searches** ("recommend headphones", "gaming gear", "laptops"):
+→ Call: search_products_by_keyword(keyword="headphones")
+
+Examples:
+- "Show me the best rated products" → browse_top_rated_products(limit=10)
+- "What are your top rated items?" → browse_top_rated_products(limit=10)
+- "Show me all your products" → browse_top_rated_products(limit=20)
+- "Recommend gaming gear" → search_products_by_keyword(keyword="gaming")
+- "What laptops do you have" → search_products_by_keyword(keyword="laptop")
+- "Tell me about the SM7B" → search_products_by_keyword(keyword="SM7B")
 
 **Tools (IN ORDER OF PRIORITY)**:
-1. ⭐ search_products_by_keyword(keyword, category, min_price, max_price, min_rating, limit) - USE THIS FIRST ALWAYS!
-2. get_user_purchase_history(user_id, limit) - Get user's past purchases
-3. get_similar_products_by_category(product_id, limit) - Get similar products  
-4. get_trending_products(category, limit) - ONLY if user explicitly says "trending" or "popular"
-5. get_best_deals(category, limit) - ONLY if user explicitly says "deals" or "discount"
-6. get_new_arrivals(category, limit) - ONLY if user explicitly says "new" or "latest"
+1. ⭐ browse_top_rated_products(limit, min_rating) - For "best rated", "top rated", "all products", catalog browsing!
+2. ⭐ search_products_by_keyword(keyword, category, min_price, max_price, min_rating, limit) - For specific product searches
+3. get_user_purchase_history(user_id, limit) - Get user's past purchases
+4. get_similar_products_by_category(product_id, limit) - Get similar products  
+5. get_trending_products(category, limit) - ONLY if user explicitly says "trending" or "popular"
+6. get_best_deals(category, limit) - ONLY if user explicitly says "deals" or "discount"
+7. get_new_arrivals(category, limit) - ONLY if user explicitly says "new" or "latest"
 
 **Response Guidelines**:
-- **NEVER list product names, prices, or ratings in your text response.** Products are displayed as visual cards automatically. Write only 1-2 conversational sentences.
-- Good: "Here are some great options I found for you! Let me know if you want to filter by budget."
-- Bad: "1. Sony WH-1000XM5 — $349.99" ← NEVER do this.
-- Bad: "Bose QuietComfort Ultra ($429.99, ⭐ 4.7/5)" ← NEVER do this.
-- If search returns NO products, say "We don't currently have [category] products, but here are some alternatives:" then search for related categories
-- NEVER give generic advice without first trying to search
-- Be direct, confident, and helpful
+- Be conversational and knowledgeable. Mention key features, benefits, and use cases when relevant.
+- When products are found, give a brief overview (1-2 sentences) highlighting what makes them great.
+- Good: "The Shure SM7B is perfect for podcasting! It's a broadcast-quality dynamic microphone with excellent noise rejection. Check out the card below for full specs."
+- Good: "I found 2 excellent microphones for you. The SM7B is ideal for vocals and podcasting, while the BETA 58A is great for live performances."
+- Avoid listing prices/ratings since those are shown in the product cards.
+- If search returns NO products, be honest: "We don't currently have [category] in stock. Would you like to see [alternative]?"
+- Never give generic responses like "Here are some options!" - actually describe what you found.
 
 Current user: {user_id} | Query type: {query_type}
 """
@@ -116,13 +127,42 @@ class ProductExpertAgent:
         
     def recommend(self, query: str, user_id: Optional[str] = None, context: Dict[str, Any] = None) -> str:
         """Generate personalized recommendations."""
+        import re as _re
         context = context or {}
         
-        # STEP 1: Always search first using keywords from the query
+        # STEP 1: Detect catalog-browse vs specific product search
         search_keywords = self._extract_keywords(query)
         requested_limit = _extract_requested_limit(query)
         initial_search_result = ""
-        if search_keywords:
+        
+        # Check if this is a catalog-browse query (best rated, top rated, all products)
+        _kw_lower = search_keywords.lower()
+        _CATALOG_PATTERNS = [
+            r'\b(?:best|top|highest|most)\s+rated\b',
+            r'\b(?:all|every)\s+(?:products?|items?)\b',
+            r'\bbest\s+(?:rating|reviews?|products?|items?)\b',
+            r'\btop\s+(?:rating|reviews?|products?|items?)\b',
+        ]
+        _stripped = _re.sub(r'\b(are|your|our|me|show|find|get|the|what|their|its|please)\b', '', _kw_lower).strip()
+        _stripped = _re.sub(r'\s+', ' ', _stripped)
+        _BARE_CATALOG = {
+            'best rated products', 'best rated items', 'best rated',
+            'top rated products', 'top rated items', 'top rated',
+            'highest rated products', 'highest rated items', 'highest rated',
+            'best products', 'top products', 'all products', 'all items',
+            'products', 'items', 'everything',
+        }
+        is_catalog_browse = (
+            any(_re.search(pat, _kw_lower) for pat in _CATALOG_PATTERNS)
+            or _stripped in _BARE_CATALOG
+        )
+        
+        if is_catalog_browse:
+            try:
+                initial_search_result = browse_top_rated_products.invoke({"limit": max(requested_limit, 10)})
+            except Exception as e:
+                initial_search_result = f"Search error: {str(e)}"
+        elif search_keywords:
             try:
                 initial_search_result = search_products_by_keyword.invoke({"keyword": search_keywords, "limit": requested_limit})
             except Exception as e:
@@ -147,8 +187,11 @@ class ProductExpertAgent:
 
         # If search returns products, respond directly with a brief conversational message.
         # Product details are shown as visual cards — no need to list them in text.
+        # But ONLY if we actually found real matches (not just random products from a loose search)
         if initial_search_result and "No products found" not in initial_search_result and "Search error" not in initial_search_result:
-            return "Here are some great picks from our catalog! Let me know if you'd like me to filter by budget or brand."
+            # Double-check: did the search actually find products, or did it return 0?
+            if "Found 0" not in initial_search_result:
+                return "Here are some great picks from our catalog! Let me know if you'd like me to filter by budget or brand."
 
         # If search fails or finds no matches, return a direct catalog-aware response.
         if "Search error" in initial_search_result or "No products found" in initial_search_result:
@@ -226,11 +269,20 @@ Inform the user we don't have {search_keywords} products currently, and suggest 
         return f"Unknown tool: {tool_name}"
     
     def _extract_keywords(self, query: str) -> str:
-        """Extract product-related keywords from query."""
-        # Remove common words and keep nouns/product terms
-        stop_words = {'recommend', 'show', 'find', 'get', 'me', 'i', 'want', 'need', 
-                      'looking', 'for', 'some', 'a', 'an', 'the', 'best', 'good',
-                      'please', 'can', 'you', 'do', 'have', 'any', 'what', 'which'}
+        """Extract product-related keywords from query.
+        
+        Keeps recommendation keywords (best, top, recommend) so hybrid_search
+        can detect recommendation intent and apply more lenient filtering.
+        Also keeps catalog-browse keywords (rated, all, products) so the
+        catalog-browse detector in search_products_by_keyword can catch them.
+        """
+        # Remove filler words but KEEP recommendation + catalog-browse keywords
+        stop_words = {'show', 'find', 'get', 'me', 'i', 'want', 'need', 
+                      'looking', 'for', 'some', 'a', 'an', 'the',
+                      'please', 'can', 'you', 'do', 'have', 'any', 'what', 'which',
+                      'are', 'is', 'your', 'our', 'their', 'its', 'my', 'tell',
+                      'about', 'would', 'could', 'should', 'like', 'also', 'just',
+                      'really', 'very', 'how', 'much', 'many', 'with'}
         words = query.lower().split()
         keywords = [w for w in words if w not in stop_words and len(w) > 2]
         return ' '.join(keywords) if keywords else query
@@ -251,7 +303,7 @@ _pending_product_cards: List[Dict[str, Any]] = []
 
 def _extract_requested_limit(query: str) -> int:
     """Extract the number of products the user asked for from the query.
-    Returns the number if found, otherwise 5 (default).
+    Returns the number if found, otherwise 5 (default), or 20 for catalog-browse.
     E.g. 'find me 2 headphones' → 2, 'top 3 laptops' → 3
     """
     import re
@@ -268,6 +320,12 @@ def _extract_requested_limit(query: str) -> int:
     m3 = re.search(r'(?:top|best)\s+(\d{1,2})\b', q)
     if m3:
         return max(int(m3.group(1)), 1)
+    # Catalog-browse queries should show more products (all of them)
+    _catalog_browse_words = ['best rated', 'top rated', 'highest rated', 'all products',
+                             'all items', 'everything', 'what do you sell', 'what do you have',
+                             'full catalog', 'browse all', 'show me all']
+    if any(pat in q for pat in _catalog_browse_words):
+        return 20  # large enough to show the full catalog
     return 5  # default
 
 
@@ -340,14 +398,15 @@ def drain_product_cards(limit: int = None, keyword: str = None) -> List[Dict[str
     
     Args:
         limit: Max number of cards to return (user-requested quantity).
-        keyword: If provided, boost relevance by sorting matched products first
-                 and filtering out clearly unrelated items.
+        keyword: If provided, boost relevance by sorting matched products first.
+                 Products already passed strict semantic relevance thresholds in
+                 the hybrid search engine, so we trust they are relevant.
     """
     cards = list(_pending_product_cards)
     _pending_product_cards.clear()
 
     # Relevance boost — sort cards so keyword-matching ones come first
-    if keyword:
+    if keyword and cards:
         import re
         # Extract core product-type words from the keyword
         stop = {'find', 'me', 'show', 'get', 'best', 'top', 'highest', 'lowest',
@@ -371,6 +430,10 @@ def drain_product_cards(limit: int = None, keyword: str = None) -> List[Dict[str
             {'tv', 'television', 'televisions'},
             {'tablet', 'tablets', 'ipad'},
             {'chair', 'chairs'},
+            {'microphone', 'microphones', 'mic', 'mics'},
+            {'guitar', 'guitars'},
+            {'bottle', 'bottles'},
+            {'interface', 'interfaces'},
         ]
         expanded_kw = set(kw_words)
         for group in synonym_groups:
@@ -382,14 +445,10 @@ def drain_product_cards(limit: int = None, keyword: str = None) -> List[Dict[str
                 haystack = f"{card.get('name', '')} {card.get('description', '')} {card.get('brand', '')}".lower()
                 return sum(1 for w in expanded_kw if w in haystack)
             
-            # Separate into relevant and non-relevant
-            scored = [(relevance_score(c), c) for c in cards]
-            relevant = [c for score, c in scored if score > 0]
-            non_relevant = [c for score, c in scored if score == 0]
-            
-            # Use relevant cards first; only add non-relevant if we need more
-            if relevant:
-                cards = relevant + non_relevant
+            # Sort by relevance score descending — keyword-matching cards first
+            # Don't discard cards that don't match keywords: they already passed
+            # strict semantic thresholds in hybrid_search.py (cosine >= 0.30)
+            cards.sort(key=lambda c: relevance_score(c), reverse=True)
 
     if limit and limit < len(cards):
         cards = cards[:limit]
@@ -447,7 +506,47 @@ def search_products_by_keyword(
                 "limit": limit,
             })
 
+    # ── Catalog-browse detection ──────────────────────────────────────────
+    # Queries about ratings or browsing the full catalog should NOT use
+    # semantic search (embeddings capture product meaning, not "best rated").
+    # Redirect to MongoDB-based browse_top_rated_products instead.
+    _kw_lower = keyword.lower()
+    _CATALOG_BROWSE_PATTERNS = [
+        r'\b(?:best|top|highest|most)\s+rated\b',
+        r'\bbest\s+(?:rating|reviews?)\b',
+        r'\btop\s+(?:rating|reviews?|products?|items?)\b',
+        r'\bhighest\s+(?:rating|reviews?)\b',
+        r'\b(?:all|every)\s+(?:products?|items?)\b',
+        r'\bshow\s+(?:me\s+)?(?:all|everything|every)\b',
+        r'\bwhat\s+(?:do\s+you|products?)\s+(?:sell|have|carry|offer)\b',
+        r'\bbrowse\s+(?:all|catalog|products?|everything)\b',
+        r'\byour\s+(?:catalog|products?|inventory|stock)\b',
+        r'\bfull\s+catalog\b',
+    ]
+    is_catalog_browse = any(_re.search(pat, _kw_lower) for pat in _CATALOG_BROWSE_PATTERNS)
+    
+    # Also catch bare "best rated products", "top rated items" after keyword extraction
+    _stripped = _re.sub(r'\b(are|your|our|me|show|find|get|the|what|their|its|please)\b', '', _kw_lower).strip()
+    _stripped = _re.sub(r'\s+', ' ', _stripped)
+    _BARE_CATALOG = {
+        'best rated products', 'best rated items', 'best rated',
+        'top rated products', 'top rated items', 'top rated',
+        'highest rated products', 'highest rated items', 'highest rated',
+        'best products', 'top products', 'all products', 'all items',
+        'products', 'items', 'everything',
+    }
+    if _stripped in _BARE_CATALOG:
+        is_catalog_browse = True
+
+    if is_catalog_browse:
+        logger.info("Catalog-browse detected for keyword=%r — using MongoDB sort by rating", keyword)
+        return browse_top_rated_products.invoke({
+            "limit": limit,
+            "min_rating": min_rating,
+        })
+
     if hybrid_engine.ready:
+        logger.debug("search_products_by_keyword: keyword=%r, category=%r", keyword, category)
         results = hybrid_engine.search(
             keyword,
             limit=limit,
@@ -456,40 +555,27 @@ def search_products_by_keyword(
             max_price=max_price,
             min_rating=min_rating,
         )
+        logger.debug("Hybrid returned %d results: %s", len(results), [r.get('name','?')[:25] for r in results])
+        
+        # Post-filter: Exclude Recording Equipment from headphone/earphone queries
+        # EXCEPT for recommendation queries where users want to see related options.
+        # For recommendations, hybrid_search already uses lenient 0.60 threshold.
+        is_headphone_query = any(term in keyword.lower() for term in ['headphone', 'headphones', 'earphone', 'earphones', 'earbud', 'earbuds'])
+        is_recommendation = any(term in keyword.lower() for term in ['recommend', 'best', 'top', 'suggest'])
+        
+        if is_headphone_query and not is_recommendation:
+            results = [r for r in results if r.get('category', '').lower() not in [
+                'recording equipment',
+                'audio interface',
+                'studio equipment',
+                'recording gear'
+            ]]
 
-        # Supplement with MongoDB if hybrid returned fewer than requested
-        if len(results) < limit:
-            existing_ids = {str(r.get('_id', '')) for r in results}
-            db = _get_sync_db()
-            # Use structured filters to fill remaining slots — keep keyword requirement
-            fallback_q: Dict[str, Any] = {}
-            conditions = []
-            if category:
-                conditions.append({"category": {"$regex": category, "$options": "i"}})
-            if min_price is not None or max_price is not None:
-                pq: Dict[str, Any] = {}
-                if min_price is not None:
-                    pq["$gte"] = min_price
-                if max_price is not None:
-                    pq["$lte"] = max_price
-                conditions.append({"price": pq})
-            if min_rating is not None:
-                conditions.append({"rating": {"$gte": min_rating}})
-            # Add keyword regex as one condition — always require keyword match
-            conditions.append({"$or": [
-                {"name": {"$regex": keyword, "$options": "i"}},
-                {"brand": {"$regex": keyword, "$options": "i"}},
-                {"description": {"$regex": keyword, "$options": "i"}},
-            ]})
-            fallback_q = {"$and": conditions} if len(conditions) > 1 else conditions[0]
-            for p in db.products.find(fallback_q).sort("rating", -1).limit(limit * 2):
-                pid = str(p.get('_id', ''))
-                if pid not in existing_ids:
-                    results.append(p)
-                    existing_ids.add(pid)
-                    if len(results) >= limit:
-                        break
-
+        # Trust hybrid search results — don't pad with MongoDB fallback.
+        # Hybrid search already applies strict semantic relevance filtering
+        # (cosine similarity >= 0.30, relative score gap <= 75%). If it
+        # returned only 2 products, those are the only truly relevant ones.
+        
         if not results:
             return f"No products found matching '{keyword}'"
 
@@ -592,6 +678,42 @@ def search_by_category(category: str, limit: int = 5) -> str:
 
 
 @tool
+def browse_top_rated_products(limit: int = 10, min_rating: Optional[float] = None) -> str:
+    """Browse all products sorted by rating (highest first).
+    Use this when the user asks for "best rated", "top rated", "highest rated",
+    "all products", "what do you sell", "show me everything", or any broad
+    catalog-level query that is NOT about a specific product type.
+    
+    This does NOT use search — it directly fetches products from the database
+    sorted by rating. Use this instead of search_products_by_keyword for
+    queries about ratings or browsing the full catalog.
+    
+    Args:
+        limit: Max number of products to return (default 10)
+        min_rating: Optional minimum rating filter (e.g., 4.0)
+    """
+    db = _get_sync_db()
+    
+    query: Dict[str, Any] = {}
+    if min_rating is not None:
+        query["rating"] = {"$gte": min_rating}
+    
+    products = list(
+        db.products.find(query)
+        .sort("rating", -1)
+        .limit(limit)
+    )
+    
+    if not products:
+        return "No products found in our catalog."
+    
+    for p in products:
+        _collect_product_card(p)
+    
+    return f"Found {len(products)} products sorted by rating (highest first). They are displayed as product cards."
+
+
+@tool
 def search_by_brand(brand: str, limit: int = 5) -> str:
     """Get all products from a specific brand.
     Uses hybrid search to rank results by relevance within the brand.
@@ -671,6 +793,16 @@ def search_by_price_range(
         .sort("rating", -1)
         .limit(limit)
     )
+    
+    # Post-filter: Exclude Recording Equipment from generic price searches
+    # Professional recording equipment shouldn't appear in general consumer price searches
+    if products and not category:
+        products = [p for p in products if p.get('category', '').lower() not in [
+            'recording equipment',
+            'audio interface',
+            'studio equipment',
+            'recording gear'
+        ]]
     
     if not products:
         return f"No products found between ${min_price} and ${max_price}"
@@ -889,6 +1021,7 @@ def drain_cart_actions() -> List[Dict[str, Any]]:
 
 SEARCH_AGENT_TOOLS = [
     search_products_by_keyword,
+    browse_top_rated_products,
     search_by_category,
     search_by_brand,
     search_by_price_range,
@@ -898,8 +1031,8 @@ SEARCH_AGENT_TOOLS = [
     chat_add_to_cart,          # Add to cart from chat
 ]
 
-# PRODUCT_EXPERT_TOOLS - search_products_by_keyword FIRST for priority
-PRODUCT_EXPERT_TOOLS = [search_products_by_keyword] + PRODUCT_EXPERT_TOOLS_BASE + [
+# PRODUCT_EXPERT_TOOLS - browse_top_rated + search_products_by_keyword FIRST for priority
+PRODUCT_EXPERT_TOOLS = [browse_top_rated_products, search_products_by_keyword] + PRODUCT_EXPERT_TOOLS_BASE + [
     mcp_track_order,
     rag_query_documents,
     chat_add_to_cart,
@@ -910,13 +1043,15 @@ SEARCH_AGENT_PROMPT = """You are the **Search Agent** - a specialist in finding 
 
 Your expertise:
 - Finding products via **hybrid search** (BM25 keyword matching + semantic embedding similarity)
+- Browsing the full product catalog sorted by rating
 - Order tracking directly from the database
 - Answering store policy questions via RAG knowledge base
 - Filtering by category, brand, price, rating
 
 Available Tools:
-**Product Search (Hybrid BM25 + Semantic)**:
-- search_products_by_keyword(keyword, category, min_price, max_price, min_rating, limit) — Primary search: uses BM25 + semantic vector ranking
+**Product Catalog & Search**:
+- browse_top_rated_products(limit, min_rating) — ⭐ USE THIS for "best rated", "top rated", "highest rated", "show me all products", "what do you sell", or any broad catalog query
+- search_products_by_keyword(keyword, category, min_price, max_price, min_rating, limit) — For specific product searches (e.g., "headphones", "Sony laptop", "Shure SM7B")
 - search_by_category(category, limit) — Search within a category
 - search_by_brand(brand, limit) — Search by brand
 - search_by_price_range(min_price, max_price, category, limit) — Filter by price range
@@ -937,13 +1072,14 @@ Available Tools:
   Use when the user says "add X to cart", "buy X", "I want the X", etc.
 
 Routing Rules:
-1. **Order tracking**: If user mentions order/tracking/delivery → use mcp_track_order. If no specific ID given, pass "latest" as order_id.
-2. **Store policies**: If user asks about shipping, returns, support, hours → use rag_query_documents
-3. **Product search**: For keyword-based queries ("headphones", "Sony laptop") → use search_products_by_keyword
-4. **Price filter**: If user specifies a budget or price range (e.g. "under $300", "$50-$200", "cheap") → use search_by_price_range with min_price=0 (or stated min) and max_price. This is the BEST tool for price filtering.
-5. **Category/brand browsing**: Use search_by_category or search_by_brand for specific category/brand lookups
-6. **Add to cart**: If user explicitly asks to add, buy, purchase, or get a product → use chat_add_to_cart with the product name
-7. **Handle 'not found'** gracefully with suggestions
+1. **Catalog browsing / rating queries**: "best rated", "top rated", "highest rated", "all products", "what do you sell" → use browse_top_rated_products
+2. **Order tracking**: If user mentions order/tracking/delivery → use mcp_track_order. If no specific ID given, pass "latest" as order_id.
+3. **Store policies**: If user asks about shipping, returns, support, hours → use rag_query_documents
+4. **Product search**: For keyword-based queries ("headphones", "Sony laptop") → use search_products_by_keyword
+5. **Price filter**: If user specifies a budget or price range (e.g. "under $300", "$50-$200", "cheap") → use search_by_price_range with min_price=0 (or stated min) and max_price. This is the BEST tool for price filtering.
+6. **Category/brand browsing**: Use search_by_category or search_by_brand for specific category/brand lookups
+7. **Add to cart**: If user explicitly asks to add, buy, purchase, or get a product → use chat_add_to_cart with the product name
+8. **Handle 'not found'** gracefully with suggestions
 
 CRITICAL RESPONSE RULES:
 - **NEVER list product names, prices, or ratings in your text response.** Products are displayed as visual cards automatically. Write only 1-2 conversational sentences.
@@ -1110,17 +1246,22 @@ class QueryIntent(BaseModel):
 
 ROUTER_PROMPT = """Analyze the user's query and determine their intent:
 
-**RECOMMENDATION intent** - User wants suggestions, advice, or personalized recommendations:
+**RECOMMENDATION intent** - User wants suggestions, advice, catalog browsing, or personalized recommendations:
 - "What should I get for..."
 - "Recommend me..."
 - "What's good for..."
 - "Best products for..."
+- "Show me the best rated products"
+- "What are your top rated items?"
+- "Show me all your products"
+- "What do you sell?"
+- "Highest rated products"
 
-**SEARCH intent** - User wants to find specific products:
-- "Find me..."
-- "Show me..."
-- "Do you have..."
-- Mentions specific brands, models, or product names
+**SEARCH intent** - User wants to find SPECIFIC products by name, type, brand, or category:
+- "Find me headphones"
+- "Show me the Shure SM7B"
+- "Do you have guitars?"
+- Mentions specific brands, models, or product types
 
 **ORDER_TRACKING intent** - User asks about order status, delivery, or tracking:
 - "Where is my order..."
@@ -1143,7 +1284,6 @@ ROUTER_PROMPT = """Analyze the user's query and determine their intent:
 
 **BOTH** - Query needs multiple intents:
 - "Find and recommend..."
-- "Show me your best..."
 
 Analyze this query and determine the intent:
 "{query}"
@@ -1227,6 +1367,20 @@ class AgentRouter:
         # since products are shown as visual cards
         if result["product_cards"]:
             result["primary_response"] = _strip_product_listing(result["primary_response"])
+        else:
+            # If no product cards survived relevance filtering, update
+            # the text to reflect that instead of saying "great picks"
+            resp = result["primary_response"]
+            if any(phrase in resp.lower() for phrase in [
+                "great picks", "found for you", "here are some",
+                "great options", "i found", "check these out",
+                "products i found", "matching products"
+            ]):
+                result["primary_response"] = (
+                    f"I searched our catalog but couldn't find products matching "
+                    f"'{query}'. We currently carry: Electronics, Audio, Furniture, "
+                    f"and more. Would you like me to show what's available?"
+                )
 
         return result
     

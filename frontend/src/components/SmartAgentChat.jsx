@@ -397,51 +397,54 @@ const SmartAgentChat = ({ height = "600px" }) => {
   const isConnected = agentStatus?.status === "operational";
   const isLoading = chatMutation.isPending;
 
-  // Auto-scroll only when receiving assistant messages
+  // Auto-scroll when messages change or loading state changes
   useEffect(() => {
-    if (messages.length > 0 && messages[messages.length - 1].role === "assistant") {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [messages]);
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isLoading]);
 
   // Strip ALL product listings from text when we have product cards to show
   const stripProductListing = (text, hasProducts) => {
     if (!hasProducts || !text) return text;
-    
+
     // Split into lines and aggressively filter out any product-related lines
-    const lines = text.split('\n');
+    const lines = text.split("\n");
     const cleaned = [];
-    
+
     for (const line of lines) {
       const trimmed = line.trim();
       if (!trimmed) continue;
-      
+
       // Skip numbered lists: "1. Product Name ...", "2. Bose ..."
       if (/^\d+\.\s+/.test(trimmed)) continue;
-      
+
       // Skip bullet lists: "• Product", "- Product", "* Product"
       if (/^[•\-\*]\s+\S/.test(trimmed)) continue;
-      
+
       // Skip lines with price patterns: "$99.99", "— $", "($"
       if (/\$\d+(\.\d{2})?/.test(trimmed)) continue;
-      
+
       // Skip lines with star/rating patterns: "⭐", "(4.7/5)", "4.6/5"
       if (/[⭐★]/.test(trimmed) || /\d\.\d\/5/.test(trimmed)) continue;
-      
+
       // Skip "Found X products" lines
       if (/found\s+\d+\s+product/i.test(trimmed)) continue;
-      
+
       // Skip "My Recommendations:" or "Here are some picks" headers
       if (/^(my\s+)?recommendations?:/i.test(trimmed)) continue;
-      if (/here\s+are\s+(some|the)\s+(picks|best|top|highest|great)/i.test(trimmed)) continue;
-      
+      if (
+        /here\s+are\s+(some|the)\s+(picks|best|top|highest|great)/i.test(
+          trimmed,
+        )
+      )
+        continue;
+
       // Skip "Top N rated products" lines
       if (/^top\s+\d+\s+rated/i.test(trimmed)) continue;
-      
+
       cleaned.push(line);
     }
-    
-    const result = cleaned.join('\n').trim();
+
+    const result = cleaned.join("\n").trim();
     // If everything was stripped, return a generic message
     return result || "Here are the products I found for you!";
   };
@@ -461,6 +464,8 @@ const SmartAgentChat = ({ height = "600px" }) => {
         threadId,
       });
 
+      console.log("[SmartAgentChat] Response:", result);
+
       // Store thread ID for conversation continuity
       if (result?.thread_id) {
         setThreadId(result.thread_id);
@@ -474,7 +479,10 @@ const SmartAgentChat = ({ height = "600px" }) => {
       const products = result?.products || [];
 
       // Strip text-based product listing if we have structured product cards
-      const displayContent = stripProductListing(messageContent, products.length > 0);
+      const displayContent = stripProductListing(
+        messageContent,
+        products.length > 0,
+      );
 
       // Add assistant response
       setMessages((prev) => [
@@ -487,11 +495,15 @@ const SmartAgentChat = ({ height = "600px" }) => {
         },
       ]);
     } catch (error) {
+      console.error(
+        "[SmartAgentChat] Error:",
+        error?.response?.data || error?.message || error,
+      );
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          content: `Sorry, I encountered an error: ${error.message}. Please try again.`,
+          content: `Error: ${error?.response?.data?.detail || error.message || "Something went wrong"}. Please try again.`,
           isError: true,
         },
       ]);

@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { Row, Col, Image, Button, Form } from "react-bootstrap";
+import { getErrorMessage } from "../utils/errorUtils";
 import { useProductDetails, useCreateReview } from "../hooks/useProductQueries";
 import Rating from "../components/Rating";
 import Loader, { PageLoader } from "../components/Loader";
@@ -113,9 +114,7 @@ const ProductScreen = () => {
         <PageLoader text="Loading product details..." />
       ) : error ? (
         <Message variant="danger">
-          {error?.response?.data?.detail ||
-            error?.message ||
-            "Failed to load product"}
+          {getErrorMessage(error, "Failed to load product")}
         </Message>
       ) : (
         <>

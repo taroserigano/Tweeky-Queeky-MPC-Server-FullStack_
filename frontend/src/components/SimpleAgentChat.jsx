@@ -1,6 +1,14 @@
 import { useState, useRef, useEffect } from "react";
-import { FiSend, FiMessageSquare } from "react-icons/fi";
+import { Link } from "react-router-dom";
+import {
+  FiSend,
+  FiMessageSquare,
+  FiShoppingCart,
+  FiStar,
+} from "react-icons/fi";
 import { useAgentChat } from "../hooks/useAgent";
+import { useDispatch } from "react-redux";
+import { addToCart } from "../slices/cartSlice";
 
 const styles = {
   container: {
@@ -139,21 +147,121 @@ const styles = {
     gap: "6px",
     transition: "opacity 0.2s",
   }),
+  productsContainer: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "8px",
+    marginTop: "8px",
+    maxWidth: "80%",
+  },
+  productCard: {
+    background: "#fff",
+    border: "1px solid #e2e8f0",
+    borderRadius: "12px",
+    padding: "12px",
+    display: "flex",
+    gap: "12px",
+    alignItems: "center",
+  },
+  productImage: {
+    width: "60px",
+    height: "60px",
+    borderRadius: "8px",
+    objectFit: "cover",
+    background: "#f1f5f9",
+  },
+  productInfo: {
+    flex: 1,
+    minWidth: 0,
+  },
+  productName: {
+    fontSize: "13px",
+    fontWeight: "600",
+    color: "#1e293b",
+    marginBottom: "4px",
+    textDecoration: "none",
+    display: "block",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  },
+  productMeta: {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    fontSize: "12px",
+  },
+  productPrice: {
+    fontWeight: "600",
+    color: "#10b981",
+  },
+  productRating: {
+    display: "flex",
+    alignItems: "center",
+    gap: "4px",
+    color: "#f59e0b",
+  },
+  addToCartBtn: {
+    padding: "8px 12px",
+    background: "linear-gradient(135deg, #10b981, #059669)",
+    color: "#fff",
+    border: "none",
+    borderRadius: "8px",
+    fontSize: "12px",
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    gap: "4px",
+    whiteSpace: "nowrap",
+  },
+  typingIndicator: {
+    display: "flex",
+    alignItems: "center",
+    gap: "6px",
+    padding: "12px 16px",
+    background: "#fff",
+    border: "1px solid #e2e8f0",
+    borderRadius: "16px",
+    maxWidth: "120px",
+    color: "#64748b",
+    fontSize: "14px",
+  },
+  typingDots: {
+    display: "flex",
+    gap: "4px",
+    alignItems: "center",
+  },
+  typingDot: (delay) => ({
+    width: "6px",
+    height: "6px",
+    borderRadius: "50%",
+    background: "#10b981",
+    animation: "bounce 1.4s infinite ease-in-out",
+    animationDelay: `${delay}s`,
+  }),
 };
 
 const SimpleAgentChat = () => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const messagesEndRef = useRef(null);
+  const dispatch = useDispatch();
 
   const chatMutation = useAgentChat();
 
-  // Auto-scroll only when receiving assistant messages
+  // Auto-scroll when new messages arrive
   useEffect(() => {
-    if (messages.length > 0 && messages[messages.length - 1].role === "assistant") {
+    if (messages.length > 0) {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages]);
+
+  // Also scroll when loading state changes (typing indicator appears)
+  useEffect(() => {
+    if (chatMutation.isPending) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [chatMutation.isPending]);
 
   const handleSend = async () => {
     if (!input.trim() || chatMutation.isPending) return;
@@ -169,25 +277,32 @@ const SimpleAgentChat = () => {
         message: userMessage,
       });
 
+      console.log("[Agent] Raw response:", response);
+
       const messageContent =
         response?.message || response?.reply || "No message in response";
 
-      // Add agent response
+      // Add agent response WITH products
       setMessages((prev) => [
         ...prev,
         {
           role: "agent",
           content: messageContent,
+          products: response?.products || [],
           used: response?.used,
           debug: response?.debug,
         },
       ]);
     } catch (error) {
+      console.error(
+        "[Agent] Chat error:",
+        error?.response?.data || error?.message || error,
+      );
       setMessages((prev) => [
         ...prev,
         {
           role: "agent",
-          content: "Sorry, I encountered an error. Please try again.",
+          content: `Error: ${error?.response?.data?.detail || error?.message || "Something went wrong. Please try again."}`,
           error: true,
         },
       ]);
@@ -200,6 +315,26 @@ const SimpleAgentChat = () => {
       handleSend();
     }
   };
+
+  const handleAddToCart = (product) => {
+    dispatch(addToCart({ ...product, qty: 1 }));
+  };
+
+  // Inject keyframe animation for typing dots
+  useEffect(() => {
+    const styleId = "agent-chat-bounce-keyframes";
+    if (!document.getElementById(styleId)) {
+      const style = document.createElement("style");
+      style.id = styleId;
+      style.textContent = `
+        @keyframes bounce {
+          0%, 80%, 100% { transform: scale(0); opacity: 0.5; }
+          40% { transform: scale(1); opacity: 1; }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+  }, []);
 
   return (
     <div style={styles.container}>
@@ -234,12 +369,12 @@ const SimpleAgentChat = () => {
               Try asking about:
             </p>
             <div style={{ fontSize: "13px", color: "#64748b" }}>
-              • "Show me headphones under $300"
+              • "Show me 2 products under $150"
               <br />
-              • "Track order ORD-1001"
+              • "I need a microphone for podcasting"
               <br />
-              • "What's your return policy?"
-              <br />• "Recommend a laptop for work"
+              • "Show me best rating products"
+              <br />• "show me music products"
             </div>
           </div>
         ) : (
@@ -259,9 +394,66 @@ const SimpleAgentChat = () => {
                     {msg.used.rag && " 📚 RAG"}
                   </div>
                 )}
+                {/* Render products if available */}
+                {msg.products && msg.products.length > 0 && (
+                  <div style={styles.productsContainer}>
+                    {msg.products.map((product) => (
+                      <div
+                        key={product._id || product.id}
+                        style={styles.productCard}
+                      >
+                        <img
+                          src={product.image}
+                          alt={product.name}
+                          style={styles.productImage}
+                        />
+                        <div style={styles.productInfo}>
+                          <Link
+                            to={`/product/${product._id || product.id}`}
+                            style={styles.productName}
+                          >
+                            {product.name}
+                          </Link>
+                          <div style={styles.productMeta}>
+                            <span style={styles.productPrice}>
+                              ${product.price?.toFixed(2)}
+                            </span>
+                            {product.rating > 0 && (
+                              <span style={styles.productRating}>
+                                <FiStar size={12} />
+                                {product.rating.toFixed(1)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <button
+                          style={styles.addToCartBtn}
+                          onClick={() => handleAddToCart(product)}
+                        >
+                          <FiShoppingCart size={14} />
+                          Add
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
           </>
+        )}
+        {/* Typing indicator */}
+        {chatMutation.isPending && (
+          <div style={styles.message(false)}>
+            <span style={styles.messageLabel}>Agent</span>
+            <div style={styles.typingIndicator}>
+              <div style={styles.typingDots}>
+                <div style={styles.typingDot(0)} />
+                <div style={styles.typingDot(0.2)} />
+                <div style={styles.typingDot(0.4)} />
+              </div>
+              Thinking...
+            </div>
+          </div>
         )}
         <div ref={messagesEndRef} />
       </div>

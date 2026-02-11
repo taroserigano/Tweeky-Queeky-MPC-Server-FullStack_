@@ -16,7 +16,7 @@ MONGO_POOL_CONFIG = {
     "waitQueueTimeoutMS": 5000,  # Max wait time for connection from pool
     "serverSelectionTimeoutMS": 5000,  # Timeout for server selection
     "connectTimeoutMS": 10000,  # Timeout for initial connection
-    "socketTimeoutMS": 45000,  # Socket timeout
+    "socketTimeoutMS": 20000,  # Socket timeout (20 seconds)
 }
 
 

@@ -64,6 +64,17 @@ TEST_RESULTS_SUMMARY.txt
 E2E_TEST_REPORT_*.txt
 *.log
 
+# Local run artifacts (generated)
+test_r*.json
+tr*.json
+test_price_results.json
+test_results_summary.json
+*test_result*.json
+verify_output*.txt
+test_output_*.txt
+image_download_log.txt
+=3.0.0
+
 # Cookies and temporary files
 cookies.txt
 nul
@@ -121,6 +132,10 @@ deploy/*.pem
 deploy/ec2-instance.txt
 deploy/*.tar.gz
 /tmp/tweeky-deploy.tar.gz
+
+# AWS/infra command outputs (generated)
+deploy/backend-status*.json
+deploy/ecs-*-task.json
 
 # Backup files
 *.gz

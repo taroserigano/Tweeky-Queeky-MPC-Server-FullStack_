@@ -3,6 +3,7 @@ import { Table, Button } from "react-bootstrap";
 import { FaTrash, FaEdit, FaCheck, FaTimes } from "react-icons/fa";
 import Message from "../../components/Message";
 import Loader from "../../components/Loader";
+import { getErrorMessage } from "../../utils/errorUtils";
 import { useDeleteUser, useUsers } from "../../hooks";
 import { Link } from "react-router-dom";
 
@@ -29,9 +30,7 @@ const UserListScreen = () => {
         <Loader />
       ) : error ? (
         <Message variant="danger">
-          {error?.response?.data?.detail ||
-            error?.message ||
-            "Failed to load users"}
+          {getErrorMessage(error, "Failed to load users")}
         </Message>
       ) : (
         <Table striped bordered hover responsive className="table-sm">

@@ -2,6 +2,7 @@ import { Table, Button } from "react-bootstrap";
 import { FaTimes } from "react-icons/fa";
 import Message from "../../components/Message";
 import Loader from "../../components/Loader";
+import { getErrorMessage } from "../../utils/errorUtils";
 import { useOrders } from "../../hooks/useOrderQueries";
 import { Link } from "react-router-dom";
 
@@ -15,9 +16,7 @@ const OrderListScreen = () => {
         <Loader />
       ) : error ? (
         <Message variant="danger">
-          {error?.response?.data?.detail ||
-            error?.message ||
-            "Failed to load orders"}
+          {getErrorMessage(error, "Failed to load orders")}
         </Message>
       ) : (
         <Table striped bordered hover responsive className="table-sm">

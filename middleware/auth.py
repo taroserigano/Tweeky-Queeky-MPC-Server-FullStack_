@@ -7,14 +7,21 @@ from typing import Optional
 
 async def get_current_user(request: Request) -> User:
     """
-    Dependency to get current authenticated user from JWT cookie
+    Dependency to get current authenticated user from JWT cookie or Authorization header
     """
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Not authorized, no token",
     )
     
+    # Try to get token from cookie first
     token = request.cookies.get("jwt")
+    
+    # If not in cookie, try Authorization header (Bearer token)
+    if not token:
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header.split(" ")[1]
     
     if not token:
         raise credentials_exception
@@ -60,7 +67,14 @@ async def get_current_user_optional(request: Request) -> Optional[User]:
     """
     Dependency to get current user if authenticated, None otherwise
     """
+    # Try to get token from cookie first
     token = request.cookies.get("jwt")
+    
+    # If not in cookie, try Authorization header
+    if not token:
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header.split(" ")[1]
     
     if not token:
         return None

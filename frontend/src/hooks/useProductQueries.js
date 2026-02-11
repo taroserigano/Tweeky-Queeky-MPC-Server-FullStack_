@@ -107,12 +107,21 @@ export const useDeleteProduct = () => {
 export const useUploadProductImage = () => {
   return useMutation({
     mutationFn: async (formData) => {
-      const { data } = await api.post("/api/upload", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
-      return data;
+      try {
+        console.log("Uploading to /api/upload...");
+        const { data } = await api.post("/api/upload", formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
+        console.log("Upload response:", data);
+        return data;
+      } catch (error) {
+        console.error("Upload API error:", error);
+        console.error("Error response:", error.response);
+        console.error("Error data:", error.response?.data);
+        throw error;
+      }
     },
   });
 };

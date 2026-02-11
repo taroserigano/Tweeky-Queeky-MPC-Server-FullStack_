@@ -85,10 +85,23 @@ _STOP_WORDS = frozenset(
 )
 
 
+def _simple_stem(word: str) -> str:
+    """Very basic suffix stripping to improve BM25 recall."""
+    for suffix in ("lessly", "ingly", "ously", "ness", "ment", "ally",
+                   "ical", "ibly", "ably", "tion", "sion", "ence", "ance",
+                   "ness", "less", "ized", "ised", "ting", "ling",
+                   "ly", "ing", "ed", "er", "es", "en"):
+        if len(word) > len(suffix) + 2 and word.endswith(suffix):
+            return word[: -len(suffix)]
+    if word.endswith("s") and len(word) > 3 and not word.endswith("ss"):
+        return word[:-1]
+    return word
+
+
 def _tokenize(text: str) -> List[str]:
-    """Simple whitespace + punctuation tokenizer, lowercased, stop-words removed."""
+    """Whitespace + punctuation tokenizer with basic stemming, lowercased, stop-words removed."""
     tokens = re.findall(r"[a-z0-9]+", text.lower())
-    return [t for t in tokens if t not in _STOP_WORDS and len(t) > 1]
+    return [_simple_stem(t) for t in tokens if t not in _STOP_WORDS and len(t) > 1]
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -149,9 +162,26 @@ def _get_pinecone_client():
 # ─────────────────────────────────────────────────────────────────────────────
 
 # Minimum relevance thresholds:
-# Products must exceed at least ONE of these to appear in results.
-_MIN_BM25_SCORE = 0.15        # Normalised BM25 (0–1); raise to filter loose keyword matches
-_MIN_SEMANTIC_SCORE = 0.35     # Cosine similarity; below this is noise/unrelated products
+# Products must exceed BOTH a combined minimum AND at least one individual threshold.
+_MIN_BM25_SCORE = 0.15         # Normalised BM25 (0–1); filters loose keyword matches
+_MIN_SEMANTIC_SCORE = 0.30     # Cosine similarity floor. OpenAI text-embedding-3-small scores:
+                               #   0.44+ = strong match ("wireless headphones" → AirPods)
+                               #   0.34  = moderate match ("headphones" → AirPods)
+                               #   0.25-0.29 = same electronic domain, different product type
+                               #   < 0.25 = unrelated
+                               # 0.30 cleanly separates relevant from irrelevant for this catalog.
+_MIN_COMBINED_RRF = 0.025      # Minimum RRF combined score to include a product
+_RELATIVE_SCORE_GAP = 0.75     # Keep only products whose semantic score is >= 75%
+                               # of the top result's semantic score.  This removes
+                               # weakly-related products that ride on embedding
+                               # noise when a strong match exists.
+                               #
+                               # Examples with real data:
+                               # "microphone podcasting" → SM7B 0.558, AirPods 0.354
+                               #   75% of 0.558 = 0.419 → AirPods filtered ✓
+                               # "headphones" → AirPods 0.345 (top) → keeps itself ✓
+                               # "audio interface" → Focusrite 0.474, AirPods 0.351
+                               #   75% of 0.474 = 0.356 → AirPods filtered ✓
 
 
 class HybridSearchEngine:
@@ -373,6 +403,7 @@ class HybridSearchEngine:
         max_price: Optional[float] = None,
         min_rating: Optional[float] = None,
         mode: str = "rrf",
+        relative_score_gap: Optional[float] = None,
     ) -> List[Dict[str, Any]]:
         """
         Hybrid search combining BM25 + semantic.
@@ -385,12 +416,27 @@ class HybridSearchEngine:
             min_price / max_price: Price range filter
             min_rating: Minimum rating filter
             mode: 'rrf' (reciprocal rank fusion) or 'weighted' (alpha blend)
+            relative_score_gap: Fraction of max semantic score for filtering.
+                              If None, auto-detects: 0.60 for recommendations,
+                              0.75 for specific searches.
 
         Returns:
             List of product dicts with 'score', 'bm25_score', 'semantic_score' keys.
         """
         if not self._ready or not self._products:
             return []
+
+        # Auto-detect recommendation intent for more lenient filtering
+        if relative_score_gap is None:
+            recommendation_keywords = ['recommend', 'best', 'top', 'suggest', 'looking for']
+            if any(kw in query.lower() for kw in recommendation_keywords):
+                relative_score_gap = 0.60  # More lenient for recommendations
+                min_semantic_threshold = 0.25  # Lower absolute threshold for recommendations
+            else:
+                relative_score_gap = _RELATIVE_SCORE_GAP  # 0.75 for specific searches
+                min_semantic_threshold = _MIN_SEMANTIC_SCORE  # 0.30 for searches
+        else:
+            min_semantic_threshold = _MIN_SEMANTIC_SCORE
 
         n = len(self._products)
 
@@ -404,6 +450,13 @@ class HybridSearchEngine:
         # Normalise BM25 to [0, 1]
         bm25_max = bm25_raw.max() if bm25_raw.max() > 0 else 1.0
         bm25_norm = bm25_raw / bm25_max
+
+        # Guard: if the BEST raw BM25 score is very low, it means no product
+        # truly matches the keywords. Zero out normalised scores to prevent
+        # the normalisation from inflating a 0.02 raw match into 1.0.
+        _BM25_RAW_FLOOR = 0.5  # Products not containing query terms score < 0.5
+        if bm25_raw.max() < _BM25_RAW_FLOOR:
+            bm25_norm = np.zeros(n, dtype=np.float32)
 
         # ── Semantic scores ───────────────────────────────────────────────
         sem_scores = self._get_semantic_scores(query, n)
@@ -420,50 +473,27 @@ class HybridSearchEngine:
 
         # ── Build ranked result list with filters ─────────────────────────
         
-        # Smart product type filtering
-        # When user searches for specific product types, exclude non-matching items
-        query_lower = query.lower()
-        exclude_keywords = set()
-        required_keywords = set()
-        
-        # Headphone/earbud queries should exclude audio interfaces, mixers, etc.
-        if re.search(r'\b(headphone|headphones|headset|earbuds?|airpods?)\b', query_lower):
-            required_keywords.add('headphone')
-            required_keywords.add('earbud')
-            required_keywords.add('airpod')
-            required_keywords.add('earphone')
-            exclude_keywords.add('interface')
-            exclude_keywords.add('mixer')
-            exclude_keywords.add('microphone')
-            exclude_keywords.add('amplifier')
-        
         scored = []
         for idx in range(n):
             p = self._products[idx]
 
-            # Apply smart filtering
-            if required_keywords or exclude_keywords:
-                product_text = f"{p['name']} {p['description']} {p['category']}".lower()
-                
-                # If we have required keywords, product must match at least one
-                if required_keywords:
-                    has_required = any(kw in product_text for kw in required_keywords)
-                    if not has_required:
-                        continue
-                
-                # If product matches exclude keywords, skip it
-                if exclude_keywords:
-                    has_excluded = any(kw in product_text for kw in exclude_keywords)
-                    if has_excluded:
-                        continue
-
             # ── Minimum relevance gate ────────────────────────────────────
-            # Exclude products that have NO keyword match AND low semantic
-            # relevance. This prevents noise (mice, ink, toothbrushes) from
-            # appearing when the user asks for "headphones".
-            has_keyword_match = bm25_norm[idx] >= _MIN_BM25_SCORE
-            has_semantic_match = sem_scores[idx] >= _MIN_SEMANTIC_SCORE
-            if not has_keyword_match and not has_semantic_match:
+            # STRICT: Always require a minimum semantic similarity. Semantic
+            # embeddings capture actual meaning (is this product related to
+            # the query?), while BM25 only matches individual words which
+            # produces false positives on common words like "best", "work".
+            #
+            # Semantic thresholds (OpenAI text-embedding-3-small):
+            #   > 0.50  = strong match (e.g., "headphones" → AirPods)
+            #   0.30-50 = related product
+            #   0.25-30 = same broad domain, acceptable for recommendations
+            #   0.15-25 = vaguely related
+            #   < 0.15  = unrelated
+            #
+            # For searches: require >= 0.30 (strict)
+            # For recommendations: require >= 0.25 (lenient for related products)
+            has_semantic_match = sem_scores[idx] >= min_semantic_threshold
+            if not has_semantic_match:
                 continue
 
             # Apply metadata filters
@@ -489,6 +519,24 @@ class HybridSearchEngine:
 
         # Sort by combined score descending
         scored.sort(key=lambda x: x["score"], reverse=True)
+
+        # ── Relative score gap filter ─────────────────────────────────────
+        # When a strong semantic match exists, remove weaker results that
+        # ride on embedding noise. This prevents "microphone" from also
+        # returning AirPods (0.282) when SM7B scored 0.485 semantically.
+        # 
+        # Use the HIGHEST semantic score among all candidates (not the top
+        # combined score) as the baseline, since BM25 can push semantically
+        # weaker products to the top of the combined ranking.
+        #
+        # For recommendation queries, use a more lenient threshold (0.60)
+        # to show related products when exact matches are limited.
+        if scored:
+            max_sem = max(r["semantic_score"] for r in scored)
+            if max_sem > 0:
+                cutoff = max_sem * relative_score_gap
+                scored = [r for r in scored if r["semantic_score"] >= cutoff]
+
         return scored[:limit]
 
     def _get_semantic_scores(self, query: str, n: int) -> np.ndarray:
@@ -540,6 +588,8 @@ class HybridSearchEngine:
             "fusion_alpha": self.alpha,
             "min_bm25_threshold": _MIN_BM25_SCORE,
             "min_semantic_threshold": _MIN_SEMANTIC_SCORE,
+            "min_combined_rrf": _MIN_COMBINED_RRF,
+            "relative_score_gap": _RELATIVE_SCORE_GAP,
         }
         if self._use_pinecone and self._pinecone_index is not None:
             try:

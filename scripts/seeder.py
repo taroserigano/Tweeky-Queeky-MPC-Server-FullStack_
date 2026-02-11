@@ -206,11 +206,11 @@ PRODUCTS = [
         "num_reviews": 3
     },
     {
-        "name": "Focusrite Scarlett 2i2 4th Gen",
+        "name": "Focusrite Scarlett 2i2 4th Gen USB Audio Interface",
         "image": "/images/Focusrite-Scarlett-2i2-4th-Gen-USB-Audio-Interface-with-Hi-Z-Instrument_93631c3b-e9b8-45d7-9f2d-219a79591be3.968b73e11420b91fae88e621862d6004.avif",
         "brand": "Focusrite",
-        "category": "Electronics",
-        "description": "USB Audio Interface for recording",
+        "category": "Recording Equipment",
+        "description": "Professional USB recording interface with 2 inputs and 2 outputs. Features high-performance preamps, Air mode, and easy-to-use design perfect for recording vocals and instruments in home studios",
         "detailed_description": "The Focusrite Scarlett 2i2 4th Generation is the world's best-selling USB audio interface, now even better. Featuring high-performance 4th generation preamps with the best-performing mic preamp the Scarlett range has ever seen. Air mode gives your recordings a brighter, more open sound. Two balanced line outputs connect to studio monitors. Auto Gain and Clip Safe features intelligently set your levels. USB-C connectivity provides bus power - no external power supply needed. Direct monitoring with no latency. Works with all major DAWs including Pro Tools, Ableton, Logic Pro, and more. Two combination inputs accept XLR, 1/4\" TRS, and Hi-Z instrument cables. Perfect for singer-songwriters, podcasters, and home studio producers.",
         "specifications": {
             "Inputs": "2x Combination XLR-1/4\" TRS",

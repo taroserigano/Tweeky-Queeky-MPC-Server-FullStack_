@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from "react-redux";
 import Message from "../components/Message";
 import CheckoutSteps from "../components/CheckoutSteps";
 import Loader from "../components/Loader";
+import { getErrorMessage } from "../utils/errorUtils";
 import { useCreateOrder } from "../hooks/useOrderQueries";
 import { clearCartItems } from "../slices/cartSlice";
 
@@ -25,22 +26,29 @@ const PlaceOrderScreen = () => {
 
   const dispatch = useDispatch();
   const placeOrderHandler = async () => {
+    // Map cart items to proper format
+    const orderItems = cart.cartItems.map((item) => ({
+      name: item.name,
+      qty: item.qty,
+      image: item.image,
+      price: item.price,
+      product: item._id || item.product,
+    }));
+
     createOrder(
       {
-        orderItems: cart.cartItems,
+        orderItems,
         shippingAddress: cart.shippingAddress,
         paymentMethod: cart.paymentMethod,
-        itemsPrice: cart.itemsPrice,
-        shippingPrice: cart.shippingPrice,
-        taxPrice: cart.taxPrice,
-        totalPrice: cart.totalPrice,
       },
       {
         onSuccess: (res) => {
           dispatch(clearCartItems());
           navigate(`/order/${res._id}`);
         },
-        onError: () => {},
+        onError: (error) => {
+          console.error("Order creation failed:", error);
+        },
       },
     );
   };
@@ -134,10 +142,7 @@ const PlaceOrderScreen = () => {
               <ListGroup.Item>
                 {error && (
                   <Message variant="danger">
-                    {error?.response?.data?.detail ||
-                      error?.data?.message ||
-                      error?.message ||
-                      "An error occurred"}
+                    {getErrorMessage(error, "An error occurred")}
                   </Message>
                 )}
               </ListGroup.Item>

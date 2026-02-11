@@ -1,0 +1,437 @@
+"""
+Manual Test Checklist for Frontend Features
+Run this script to generate a comprehensive test checklist
+"""
+
+checklist = """
+╔════════════════════════════════════════════════════════════════════════╗
+║                  COMPREHENSIVE FEATURE TEST CHECKLIST                   ║
+╚════════════════════════════════════════════════════════════════════════╝
+
+Prerequisites:
+□ Backend running on http://localhost:5000
+□ Frontend running on http://localhost:3000
+□ MCP Server running on http://127.0.0.1:7001
+□ RAG Service running on http://127.0.0.1:7002
+□ Agent Gateway running on http://127.0.0.1:7000
+
+═══════════════════════════════════════════════════════════════════════════
+1. PRODUCT SORTING TESTS
+═══════════════════════════════════════════════════════════════════════════
+
+□ Navigate to: http://localhost:3000
+
+□ Test: Default view (no sorting)
+   - Products display in default order
+   - Dropdown shows "Sort by..." or first option
+
+□ Test: Sort by Price (Low to High)
+   - Select "Price: Low to High" from dropdown
+   - Verify products reorder with cheapest first
+   - Check URL updates with sortBy parameter
+   - Verify prices increase as you scroll down
+
+□ Test: Sort by Price (High to Low)
+   - Select "Price: High to Low" from dropdown
+   - Verify products reorder with most expensive first
+   - Verify prices decrease as you scroll down
+
+□ Test: Sort by Rating
+   - Select "Highest Rated" from dropdown
+   - Verify products with 5-star ratings appear first
+   - Verify ratings decrease as you scroll down
+
+□ Test: Sort by Newest
+   - Select "Newest" from dropdown
+   - Verify most recent products appear first
+
+□ Test: Sort by Oldest
+   - Select "Oldest" from dropdown
+   - Verify oldest products appear first
+
+□ Test: Sorting persistence
+   - Select a sort option
+   - Navigate to page 2
+   - Verify sorting is maintained
+   - Refresh page
+   - Verify sorting is maintained
+
+═══════════════════════════════════════════════════════════════════════════
+2. SEARCH AUTOCOMPLETE TESTS
+═══════════════════════════════════════════════════════════════════════════
+
+□ Test: Minimum character requirement
+   - Click search box in header
+   - Type 1 character (e.g., "s")
+   - Verify NO dropdown appears
+
+□ Test: Autocomplete appears
+   - Type 2 characters (e.g., "so")
+   - Verify dropdown appears with suggestions
+
+□ Test: Product suggestions
+   - Type "sony"
+   - Verify products containing "sony" appear
+   - Verify suggestions show product names
+   - Verify product type is indicated
+
+□ Test: Brand suggestions
+   - Type "apple"
+   - Verify brand suggestions appear
+   - Verify they're labeled as "brand"
+
+□ Test: Category suggestions
+   - Type "electronics"
+   - Verify category suggestions appear
+   - Verify they're labeled as "category"
+
+□ Test: Keyboard navigation - Arrow Down
+   - Type "son"
+   - Press Arrow Down key
+   - Verify first suggestion highlights
+   - Press Arrow Down again
+   - Verify second suggestion highlights
+
+□ Test: Keyboard navigation - Arrow Up
+   - Navigate down through suggestions
+   - Press Arrow Up key
+   - Verify previous suggestion highlights
+   - Continue pressing up
+   - Verify it wraps to bottom
+
+□ Test: Keyboard navigation - Enter
+   - Highlight a suggestion with arrows
+   - Press Enter
+   - Verify search executes with that term
+
+□ Test: Keyboard navigation - Escape
+   - Open dropdown with suggestions
+   - Press Escape key
+   - Verify dropdown closes
+
+□ Test: Mouse selection
+   - Type to show suggestions
+   - Click on a suggestion
+   - Verify search executes
+
+□ Test: Click outside
+   - Open dropdown with suggestions
+   - Click elsewhere on page
+   - Verify dropdown closes
+
+□ Test: Empty results
+   - Type "xyzabc123"
+   - Verify dropdown shows "No suggestions" or is empty
+
+□ Test: Real-time updates
+   - Type "son"
+   - Wait for suggestions
+   - Add "y" to make "sony"
+   - Verify suggestions update instantly
+
+═══════════════════════════════════════════════════════════════════════════
+3. DARK MODE TESTS
+═══════════════════════════════════════════════════════════════════════════
+
+□ Test: Find theme toggle
+   - Look for sun/moon icon in header
+   - Verify it's visible and clickable
+
+□ Test: Toggle to dark mode
+   - Click theme toggle
+   - Verify background changes to dark
+   - Verify text changes to light colors
+   - Verify cards have dark backgrounds
+   - Verify contrast is readable
+
+□ Test: Toggle back to light mode
+   - Click theme toggle again
+   - Verify background changes to light
+   - Verify text changes to dark colors
+   - Verify cards have light backgrounds
+
+□ Test: Smooth transitions
+   - Toggle between modes
+   - Verify colors transition smoothly (not jarring)
+   - Verify no flashing or flickering
+
+□ Test: Persistence across pages
+   - Set to dark mode
+   - Navigate to product detail page
+   - Verify dark mode persists
+   - Navigate to orders page
+   - Verify dark mode persists
+
+□ Test: Persistence after refresh
+   - Set to dark mode
+   - Refresh page (F5)
+   - Verify page loads in dark mode
+
+□ Test: Persistence in new tab
+   - Set to dark mode
+   - Open new tab to same site
+   - Verify new tab opens in dark mode
+
+□ Test: localStorage
+   - Open browser DevTools (F12)
+   - Go to Application > Local Storage
+   - Verify "theme" key exists
+   - Verify value is "dark" or "light"
+
+□ Test: All pages
+   - Home page - verify all components dark
+   - Product detail - verify dark mode works
+   - Cart page - verify dark mode works
+   - Checkout - verify dark mode works
+   - Orders - verify dark mode works
+   - Profile - verify dark mode works
+   - AI Assistant - verify dark mode works
+
+═══════════════════════════════════════════════════════════════════════════
+4. BREADCRUMBS TESTS
+═══════════════════════════════════════════════════════════════════════════
+
+□ Test: Breadcrumbs appear on product page
+   - Click any product from home page
+   - Look at top of product detail page
+   - Verify breadcrumbs are visible
+
+□ Test: Breadcrumb structure
+   - Verify format: Home > Category > Product Name
+   - Verify "Home" is present
+   - Verify category matches product's category
+   - Verify product name matches
+
+□ Test: Home link works
+   - Click "Home" in breadcrumbs
+   - Verify navigates to homepage
+
+□ Test: Category link works
+   - Click category name in breadcrumbs
+   - Verify navigates to filtered category view
+
+□ Test: Current page not clickable
+   - Product name should not be a link
+   - Or should be visually distinct (different color/no underline)
+
+□ Test: Different categories
+   - Navigate to Electronics product
+   - Verify shows: Home > Electronics > Product
+   - Navigate to Clothing product
+   - Verify shows: Home > Clothing > Product
+   - Navigate to Home products
+   - Verify shows: Home > Home > Product
+
+□ Test: Separator display
+   - Verify separator (> or /) displays correctly
+   - Verify spacing is appropriate
+
+□ Test: Responsive on mobile
+   - Resize browser to mobile width (< 768px)
+   - Verify breadcrumbs still visible
+   - Verify text doesn't overflow
+
+═══════════════════════════════════════════════════════════════════════════
+5. LOADING SKELETONS TESTS
+═══════════════════════════════════════════════════════════════════════════
+
+□ Test: Product detail skeleton
+   - Navigate to product detail page
+   - Watch during initial load
+   - Verify skeleton appears briefly
+   - Verify skeleton shows image placeholder
+   - Verify skeleton shows text placeholders
+   - Verify skeleton has shimmer/pulse effect
+
+□ Test: Table skeleton (if applicable)
+   - Navigate to orders or admin page with table
+   - Watch during initial load
+   - Verify skeleton table appears
+   - Verify shows row placeholders
+
+□ Test: Replace with real content
+   - Verify skeleton disappears when data loads
+   - Verify smooth transition to real content
+   - Verify no layout shift (CLS)
+
+□ Test: Skeleton styling
+   - Verify skeletons match site theme
+   - In dark mode, verify skeletons are appropriate color
+
+═══════════════════════════════════════════════════════════════════════════
+6. CHAT SCROLL BEHAVIOR TESTS
+═══════════════════════════════════════════════════════════════════════════
+
+□ Navigate to: http://localhost:3000/ai
+
+□ Test: No scroll on user message
+   - Scroll chat up to middle of conversation
+   - Type a message
+   - Press Send
+   - Verify chat DOES NOT scroll to bottom
+   - Verify you stay at your scroll position
+
+□ Test: Scroll on AI response
+   - Send a message to AI
+   - Wait for AI response
+   - Verify chat DOES scroll to bottom automatically
+   - Verify AI's response is fully visible
+
+□ Test: Multiple exchanges
+   - Have 5+ back-and-forth exchanges
+   - Verify only AI responses trigger scroll
+   - Verify user messages don't trigger scroll
+
+□ Test: Long conversations
+   - Generate 20+ messages
+   - Scroll to top
+   - Send new message
+   - Verify stays at top for user message
+   - Wait for AI response
+   - Verify scrolls to bottom for AI message
+
+═══════════════════════════════════════════════════════════════════════════
+7. MCP + RAG INTEGRATION TESTS
+═══════════════════════════════════════════════════════════════════════════
+
+□ Verify services running:
+   - Open http://127.0.0.1:7001 in browser
+   - Verify MCP Server is responding
+   - Open http://127.0.0.1:7002 in browser
+   - Verify RAG Service is responding
+   - Open http://127.0.0.1:7000 in browser
+   - Verify Agent Gateway is responding
+
+□ Navigate to: http://localhost:3000/ai
+
+□ Test: Product search queries (MCP)
+   - Ask: "show me headphones"
+   - Verify response lists headphones
+   - Verify product details are accurate
+   - Check browser console for "MCP" keyword
+
+□ Test: Order tracking queries (MCP)
+   - Ask: "track order ORD-1001"
+   - Verify response shows order status
+   - Verify order details are accurate
+   - Try: "what's my order status?"
+
+□ Test: Policy questions (RAG)
+   - Ask: "what is your return policy?"
+   - Verify response describes return policy
+   - Check browser console for "RAG" keyword
+   - Ask: "how does shipping work?"
+   - Verify response describes shipping
+
+□ Test: General questions (RAG)
+   - Ask: "tell me about your company"
+   - Verify response uses RAG documents
+   - Ask: "what payment methods do you accept?"
+
+□ Test: Mixed queries
+   - Ask: "show me phones under $500"
+   - Verify correct routing (MCP)
+   - Ask: "what warranty do you offer?"
+   - Verify correct routing (RAG)
+
+□ Test: Error handling
+   - Ask nonsense query: "asdfasdf"
+   - Verify graceful error message
+   - Ask query with no results
+   - Verify appropriate "no results" message
+
+□ Test: Response time
+   - Send various queries
+   - Verify responses come within 5 seconds
+   - Verify loading indicator shows during wait
+
+═══════════════════════════════════════════════════════════════════════════
+8. CROSS-BROWSER TESTS
+═══════════════════════════════════════════════════════════════════════════
+
+□ Test in Chrome
+   - Run all above tests
+   - Check console for errors
+
+□ Test in Firefox
+   - Run all above tests
+   - Check console for errors
+
+□ Test in Edge
+   - Run all above tests
+   - Check console for errors
+
+□ Test in Safari (if available)
+   - Run all above tests
+   - Check console for errors
+
+═══════════════════════════════════════════════════════════════════════════
+9. RESPONSIVE/MOBILE TESTS
+═══════════════════════════════════════════════════════════════════════════
+
+□ Test at 375px width (mobile)
+   - All features work
+   - Layout doesn't break
+   - Text is readable
+
+□ Test at 768px width (tablet)
+   - All features work
+   - Layout adjusts appropriately
+
+□ Test at 1920px width (desktop)
+   - All features work
+   - Layout uses space well
+
+═══════════════════════════════════════════════════════════════════════════
+10. PERFORMANCE TESTS
+═══════════════════════════════════════════════════════════════════════════
+
+□ Test: Page load time
+   - Open DevTools Network tab
+   - Refresh homepage
+   - Verify loads in < 3 seconds
+
+□ Test: Autocomplete performance
+   - Type rapidly in search box
+   - Verify no lag or delay
+   - Verify requests are debounced
+
+□ Test: Sort performance
+   - Change sort option
+   - Verify products reorder quickly (< 1 second)
+
+□ Test: Theme toggle performance
+   - Toggle theme rapidly
+   - Verify smooth transitions
+   - Verify no memory leaks
+
+═══════════════════════════════════════════════════════════════════════════
+
+LEGEND:
+□ = Not tested
+✓ = Passed
+✗ = Failed
+⚠ = Passed with warnings
+
+TEST SUMMARY:
+Total Tests: ~100+
+Passed: ___
+Failed: ___
+Warnings: ___
+
+NOTES:
+___________________________________________________________________________
+___________________________________________________________________________
+___________________________________________________________________________
+___________________________________________________________________________
+
+"""
+
+if __name__ == "__main__":
+    print(checklist)
+    
+    # Save to file
+    with open("MANUAL_TEST_CHECKLIST.txt", "w", encoding="utf-8") as f:
+        f.write(checklist)
+    
+    print("\n✓ Checklist saved to: MANUAL_TEST_CHECKLIST.txt")

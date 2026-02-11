@@ -64,12 +64,12 @@ def product_to_response(product: Product) -> ProductResponse:
 @router.get("/top")
 async def get_top_products():
     """Get featured products for carousel"""
-    # Specific featured products for carousel
+    # Specific featured products for carousel (consumer products only)
     featured_names = [
-        "Focusrite Scarlett 2i2 4th Gen",
+        "Apple AirPods 4",
         "DYU 14 Folding Electric Bike",
         "BOSSIN Home Office Chair",
-        "Apple AirPods 4"
+        "Shure SM7B"
     ]
     
     products = []
@@ -82,8 +82,20 @@ async def get_top_products():
             products.append(product)
     
     # If featured products not found, fall back to top rated
+    # Exclude recording equipment from top products
     if len(products) < 3:
-        products = await Product.find(fetch_links=True).sort("-rating").limit(4).to_list()
+        all_products = await Product.find(fetch_links=True).sort("-rating").to_list()
+        # Filter out recording equipment categories
+        filtered_products = [
+            p for p in all_products 
+            if p.category and p.category.lower() not in [
+                'recording equipment',
+                'audio interface',
+                'studio equipment',
+                'recording gear'
+            ]
+        ]
+        products = filtered_products[:4]
     
     return [product_to_response(product) for product in products]
 

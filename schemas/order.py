@@ -5,7 +5,7 @@ from datetime import datetime
 
 # Embedded schemas
 class ShippingAddressSchema(BaseModel):
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, extra="ignore")
     
     address: str
     city: str
@@ -14,20 +14,20 @@ class ShippingAddressSchema(BaseModel):
 
 
 class OrderItemSchema(BaseModel):
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, extra="ignore")
     
     name: str
     qty: int
     image: str
     price: float
-    product: str
+    product: Optional[str] = None
 
     @model_validator(mode='before')
     @classmethod
     def set_product_from_id(cls, data: Any) -> Any:
         if isinstance(data, dict):
             # If _id is provided but product is not, use _id as product
-            if '_id' in data and 'product' not in data:
+            if '_id' in data and not data.get('product'):
                 data['product'] = str(data['_id'])
         return data
 
@@ -43,7 +43,7 @@ class PaymentResultSchema(BaseModel):
 
 # Request schemas
 class OrderCreate(BaseModel):
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, extra="ignore")
     
     order_items: List[OrderItemSchema] = Field(alias="orderItems")
     shipping_address: ShippingAddressSchema = Field(alias="shippingAddress")

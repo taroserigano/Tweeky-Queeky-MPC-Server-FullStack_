@@ -5,6 +5,7 @@ import { FaTimes } from "react-icons/fa";
 
 import Message from "../components/Message";
 import Loader from "../components/Loader";
+import { getErrorMessage } from "../utils/errorUtils";
 import { useUpdateProfile } from "../hooks";
 import { useMyOrders } from "../hooks/useOrderQueries";
 import { setCredentials } from "../slices/authSlice";
@@ -108,9 +109,7 @@ const ProfileScreen = () => {
           <Loader />
         ) : error ? (
           <Message variant="danger">
-            {error?.response?.data?.detail ||
-              error?.message ||
-              "Failed to load orders"}
+            {getErrorMessage(error, "Failed to load orders")}
           </Message>
         ) : (
           <Table striped hover responsive className="table-sm">

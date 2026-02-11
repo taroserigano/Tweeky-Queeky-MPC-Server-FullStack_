@@ -4,6 +4,7 @@ import { Form, Button } from "react-bootstrap";
 import Message from "../../components/Message";
 import Loader from "../../components/Loader";
 import FormContainer from "../../components/FormContainer";
+import { getErrorMessage } from "../../utils/errorUtils";
 import {
   useProductDetails,
   useUpdateProduct,
@@ -66,13 +67,51 @@ const ProductEditScreen = () => {
   }, [product]);
 
   const uploadFileHandler = async (e) => {
+    const file = e.target.files[0];
+    if (!file) {
+      alert("Please select a file");
+      return;
+    }
+
+    console.log("Uploading file:", {
+      name: file.name,
+      type: file.type,
+      size: file.size,
+      sizeKB: (file.size / 1024).toFixed(2) + " KB",
+    });
+
     const formData = new FormData();
-    formData.append("image", e.target.files[0]);
+    formData.append("image", file);
+
+    console.log("FormData created, calling uploadProductImage...");
+
     uploadProductImage(formData, {
       onSuccess: (res) => {
+        console.log("Upload success:", res);
         setImage(res.image);
+        alert("Image uploaded successfully!");
       },
-      onError: () => {},
+      onError: (error) => {
+        console.error("Upload error:", error);
+        console.error("Error details:", JSON.stringify(error, null, 2));
+
+        // Extract error message from various possible error structures
+        let errorMessage = "Failed to upload image";
+
+        if (error?.response?.data?.detail) {
+          errorMessage = error.response.data.detail;
+        } else if (error?.response?.data?.message) {
+          errorMessage = error.response.data.message;
+        } else if (error?.message) {
+          errorMessage = error.message;
+        } else if (typeof error === "string") {
+          errorMessage = error;
+        } else if (error?.response?.statusText) {
+          errorMessage = `${error.response.status}: ${error.response.statusText}`;
+        }
+
+        alert(`Upload failed: ${errorMessage}`);
+      },
     });
   };
 
@@ -87,7 +126,9 @@ const ProductEditScreen = () => {
         {isLoading ? (
           <Loader />
         ) : error ? (
-          <Message variant="danger">{error.data.message}</Message>
+          <Message variant="danger">
+            {getErrorMessage(error, "Failed to load product")}
+          </Message>
         ) : (
           <Form onSubmit={submitHandler}>
             <Form.Group controlId="name">

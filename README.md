@@ -1,8 +1,19 @@
 # 🛒 Tweeky-Queeky-Shop: Full-Stack E-Commerce Platform
 
-> **Enterprise-Grade MERN Stack E-Commerce with FastAPI Backend & Docker Orchestration**
+> **Portfolio project showcasing a modern FastAPI + React e-commerce system (Docker-ready, async backend, hybrid search, payments, and admin tooling).**
 
-A production-ready, full-stack e-commerce application showcasing modern web development practices with **FastAPI (Python)**, **React 18**, **MongoDB Atlas**, and **Docker**. Features enterprise-level architecture, secure PayPal payment processing, JWT authentication, and comprehensive test coverage.
+Production-style full-stack e-commerce app built with **FastAPI (Python)**, **React 18**, **MongoDB**, and **Docker**. Includes JWT auth, PayPal/Stripe-ready checkout flow, admin dashboard, image uploads, and an MCP tool server for agentic workflows.
+
+## 🔥 Key Technologies (Up Front)
+
+- **Backend:** FastAPI (async), Pydantic v2, Beanie ODM (MongoDB), Uvicorn
+- **Data:** MongoDB Atlas/local MongoDB, connection pooling, indexes
+- **Search:** Hybrid search (BM25 + embeddings), Pinecone vector backend, OpenAI embeddings
+- **Frontend:** React 18, Redux Toolkit, RTK Query, React Router
+- **Payments:** PayPal integration (plus Stripe config endpoints)
+- **Infra:** Docker + Docker Compose, Nginx reverse proxy for frontend container
+- **Security:** JWT in HTTP-only cookies, bcrypt password hashing
+- **AI Tooling:** MCP server exposing safe catalog/admin tools (audit logging + dry-run)
 
 <div align="center">
 
@@ -57,9 +68,9 @@ A production-ready, full-stack e-commerce application showcasing modern web deve
 
 | Technology           | Purpose             | Why This Choice                                                            |
 | -------------------- | ------------------- | -------------------------------------------------------------------------- |
-| **FastAPI 0.115.0**  | REST API Framework  | ⚡ Async/await native, 3x faster than Flask, auto-generated OpenAPI docs   |
+| **FastAPI 0.115.0**  | REST API Framework  | ⚡ Async/await native, auto-generated OpenAPI docs                         |
 | **Beanie ODM**       | MongoDB Integration | 🔄 Async MongoDB operations, Pydantic integration, relationship management |
-| **Pydantic v2**      | Data Validation     | 🛡️ Type-safe validation, 20x faster than v1, automatic serialization       |
+| **Pydantic v2**      | Data Validation     | 🛡️ Type-safe validation and serialization                                 |
 | **PyJWT**            | Authentication      | 🔐 JWT token generation/verification with HTTP-only cookie security        |
 | **Passlib + Bcrypt** | Password Security   | 🔒 Industry-standard password hashing with salt rounds                     |
 | **Uvicorn**          | ASGI Server         | 🚀 High-performance async server for production deployments                |
@@ -67,7 +78,7 @@ A production-ready, full-stack e-commerce application showcasing modern web deve
 **Key Backend Features:**
 
 - ✅ **100% Type-Hinted** - Full type safety with mypy compatibility
-- ✅ **Async/Await Throughout** - Non-blocking I/O for high concurrency (1000+ req/sec)
+- ✅ **Async/Await Throughout** - Non-blocking I/O for high concurrency
 - ✅ **Dependency Injection** - FastAPI's powerful DI system for clean, testable code
 - ✅ **Auto-Generated Docs** - Interactive Swagger UI & ReDoc at `/docs` and `/redoc`
 - ✅ **Pydantic V2 Models** - Request/response validation with detailed error messages
@@ -258,7 +269,9 @@ These hooks are implemented in `frontend/src/hooks/` and re-exported from `front
 
 ## 🚀 Quick Start
 
-> 📘 **Port Configuration:** The app automatically detects whether it's running locally or in Docker and configures ports accordingly.
+> 📘 **Ports (current defaults):**
+> - **Docker:** Frontend `3000`, Backend `5000`
+> - **Local dev via `start.py`:** Frontend `3000`, Backend `5003`
 
 ### 🐳 Docker Deployment (Recommended for Production)
 
@@ -308,10 +321,15 @@ source .venv/bin/activate
 # Install dependencies
 pip install -r requirements.txt
 
-# Run development server with auto-reload
-uvicorn main:app --reload --port 5000
+# Start full stack (recommended for local dev)
+python start.py
 
-# Backend running at http://localhost:5000
+# Frontend: http://localhost:3000
+# Backend API: http://localhost:5003
+# API Docs: http://localhost:5003/docs
+
+# Or run only the backend:
+uvicorn main:app --reload --port 5003 --host 127.0.0.1
 ```
 
 ### 🤖 MCP Server (Agentic AI Tools)
@@ -386,9 +404,9 @@ npm start
 # Frontend running at http://localhost:3000
 ```
 
-### � Switching Between Local and Docker
+### 🔄 Switching Between Local and Docker
 
-**No configuration changes needed!** The app automatically detects the environment.
+For day-to-day development, use `python start.py` (frontend `3000`, backend `5003`). For containerized runs, use Docker Compose (frontend `3000`, backend `5000`).
 
 **From Local to Docker:**
 
@@ -404,14 +422,17 @@ docker-compose up -d
 # Stop Docker containers
 docker-compose down
 
-# Start local servers (2 terminals)
-# Terminal 1: uvicorn main:app --reload --port 5000
-# Terminal 2: cd frontend && npm start
+# Start local servers
+# Recommended:
+#   python start.py
+# Or (2 terminals):
+#   Terminal 1: uvicorn main:app --reload --port 5003 --host 127.0.0.1
+#   Terminal 2: cd frontend && npm start
 ```
 
 Access: http://localhost:3000 (works the same in both environments)
 
-### �📋 Prerequisites
+### 📋 Prerequisites
 
 | Requirement               | Version   | Purpose                       |
 | ------------------------- | --------- | ----------------------------- |
@@ -495,8 +516,12 @@ docker-compose down && docker-compose up -d
 
 Once the server is running:
 
-- **Swagger UI**: http://localhost:5000/docs
-- **ReDoc**: http://localhost:5000/redoc
+- **Docker (default)**:
+  - Swagger UI: http://localhost:5000/docs
+  - ReDoc: http://localhost:5000/redoc
+- **Local dev via `start.py`**:
+  - Swagger UI: http://localhost:5003/docs
+  - ReDoc: http://localhost:5003/redoc
 
 ### Key Endpoints
 

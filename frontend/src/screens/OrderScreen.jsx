@@ -24,6 +24,7 @@ import {
   FiSave,
 } from "react-icons/fi";
 import { PageLoader } from "../components/Loader";
+import { getErrorMessage } from "../utils/errorUtils";
 import {
   useOrderDetails,
   usePayOrder,
@@ -702,9 +703,7 @@ const OrderScreen = () => {
           </div>
           <h2 style={styles.errorTitle}>Order Not Found</h2>
           <p style={styles.errorText}>
-            {error?.response?.data?.detail ||
-              error?.data?.message ||
-              "Unable to load order details"}
+            {getErrorMessage(error, "Unable to load order details")}
           </p>
           <Link
             to="/"
@@ -1124,18 +1123,120 @@ const OrderScreen = () => {
                   />
                 ) : /* ── PayPal ── */
                 isPending ? (
-                  <div style={{ textAlign: "center", padding: "20px" }}>
-                    <div className="spinner-border text-primary" role="status">
-                      <span className="visually-hidden">Loading PayPal...</span>
+                  <>
+                    <div style={{ textAlign: "center", padding: "20px" }}>
+                      <div
+                        className="spinner-border text-primary"
+                        role="status"
+                      >
+                        <span className="visually-hidden">
+                          Loading PayPal...
+                        </span>
+                      </div>
+                      <p
+                        style={{
+                          marginTop: "12px",
+                          fontSize: "13px",
+                          color: "#64748b",
+                        }}
+                      >
+                        PayPal is loading...
+                      </p>
                     </div>
-                  </div>
+                    {/* Test payment button for development */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (
+                          window.confirm("Use test payment? (Development only)")
+                        ) {
+                          payOrder(
+                            {
+                              orderId,
+                              details: {
+                                id: `TEST-${Date.now()}`,
+                                status: "COMPLETED",
+                                update_time: new Date().toISOString(),
+                                source: "test",
+                              },
+                            },
+                            {
+                              onSuccess: () => {
+                                refetch();
+                              },
+                              onError: () => {},
+                            },
+                          );
+                        }
+                      }}
+                      style={{
+                        width: "100%",
+                        padding: "12px",
+                        background: "#f59e0b",
+                        color: "#fff",
+                        border: "none",
+                        borderRadius: "8px",
+                        fontSize: "14px",
+                        fontWeight: "500",
+                        cursor: "pointer",
+                        marginTop: "8px",
+                      }}
+                    >
+                      Use Test Payment (Dev)
+                    </button>
+                  </>
                 ) : (
-                  <PayPalButtons
-                    createOrder={createOrder}
-                    onApprove={onApprove}
-                    onError={onError}
-                    style={{ layout: "vertical" }}
-                  />
+                  <>
+                    <PayPalButtons
+                      createOrder={createOrder}
+                      onApprove={onApprove}
+                      onError={onError}
+                      style={{ layout: "vertical" }}
+                    />
+                    {/* Fallback test payment button */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (
+                          window.confirm(
+                            "Skip PayPal and use test payment? (Development only)",
+                          )
+                        ) {
+                          payOrder(
+                            {
+                              orderId,
+                              details: {
+                                id: `TEST-${Date.now()}`,
+                                status: "COMPLETED",
+                                update_time: new Date().toISOString(),
+                                source: "test",
+                              },
+                            },
+                            {
+                              onSuccess: () => {
+                                refetch();
+                              },
+                              onError: () => {},
+                            },
+                          );
+                        }
+                      }}
+                      style={{
+                        width: "100%",
+                        padding: "10px",
+                        background: "transparent",
+                        color: "#f59e0b",
+                        border: "1px solid #f59e0b",
+                        borderRadius: "8px",
+                        fontSize: "13px",
+                        fontWeight: "500",
+                        cursor: "pointer",
+                        marginTop: "12px",
+                      }}
+                    >
+                      Use Test Payment Instead
+                    </button>
+                  </>
                 )}
               </div>
             )}
