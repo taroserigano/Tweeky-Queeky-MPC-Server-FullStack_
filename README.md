@@ -1,19 +1,23 @@
-# 🛒 Agentic AI E-Commerce Platform - Tweeky-Queeky-Shop
+# 🤖 Tweeky-Queeky Shop: Agentic AI E-Commerce Portfolio
 
-> **Portfolio project showcasing a modern FastAPI + React e-commerce system (Dockerized, async backend, hybrid search, payments, and admin tooling).**
+> **Portfolio project focused on agentic AI patterns (tool-use via MCP + retrieval via RAG) wrapped inside a real e-commerce app (FastAPI + React).**
 
-Production-style full-stack e-commerce app built with **FastAPI (Python)**, **React 18**, **MongoDB**, and **Docker**. Includes JWT auth, PayPal/Stripe-ready checkout flow, admin dashboard, image uploads, and an MCP tool server for agentic workflows.
+This repo is intentionally **agent-first**:
+- The React frontend talks to an **Agent Gateway** (one `/chat` surface)
+- The agent **routes intent** to either an **MCP tool server** (products/orders) or a **RAG service** (policy/docs)
+- The tool layer stays **hidden from the UI**, making the boundary clean, testable, and production-shaped
 
-## 🔥 Key Technologies (Up Front)
+You can also run the full e-commerce backend (auth/products/orders/payments) alongside the agentic stack.
 
-- **Backend:** FastAPI (async), Pydantic v2, Beanie ODM (MongoDB), Uvicorn
-- **Data:** MongoDB Atlas/local MongoDB, connection pooling, indexes
-- **Search:** Hybrid search (BM25 + embeddings), Pinecone vector backend, OpenAI embeddings
-- **Frontend:** React 18, Redux Toolkit, RTK Query, React Router
-- **Payments:** PayPal integration (plus Stripe config endpoints)
-- **Infra:** Docker + Docker Compose, Nginx reverse proxy for frontend container
-- **Security:** JWT in HTTP-only cookies, bcrypt password hashing
-- **AI Tooling:** MCP server exposing safe catalog/admin tools (audit logging + dry-run)
+## 🔥 Key Technologies (Agentic, Up Front)
+
+- **Agent Gateway (FastAPI):** orchestrates requests and routes to tools vs retrieval
+- **MCP Tool Server:** product search + product lookup + order tracking tools (HTTP tools API)
+- **RAG Service:** local markdown doc retrieval (TF‑IDF) for policy/support Q&A
+- **Frontend:** React 18 (chat UI at `/ai`), Redux Toolkit / RTK Query
+- **Full E‑Commerce API (optional mode):** FastAPI + MongoDB (Beanie), JWT cookies, uploads, PayPal/Stripe config
+- **Search (optional mode):** hybrid search (BM25 + embeddings) with OpenAI + Pinecone configuration
+- **Infra:** Docker / Compose (full-stack), plus simple local scripts for the 3-service agent architecture
 
 <div align="center">
 
@@ -32,19 +36,70 @@ Production-style full-stack e-commerce app built with **FastAPI (Python)**, **Re
 
 ## 🎯 Project Highlights
 
-- ✅ **Production-Ready Architecture** - Fully dockerized microservices with multi-stage builds
-- ✅ **Modern Python Backend** - FastAPI with async/await, type hints, and auto-generated API docs
-- ✅ **React 18 + Redux Toolkit** - Enterprise-grade state management with RTK Query and custom hooks
-- ✅ **Advanced React Patterns** - Hooks, HOCs, compound components, code splitting, and performance optimization
-- ✅ **MongoDB Atlas Integration** - NoSQL database with Beanie ODM and proper relationship handling
-- ✅ **Secure Authentication** - JWT tokens in HTTP-only cookies with bcrypt password hashing
-- ✅ **PayPal Payment Integration** - Complete checkout flow with order management
-- ✅ **Responsive UI/UX** - Mobile-first design, accessibility features, and optimistic updates
-- ✅ **Comprehensive Testing** - 30+ automated tests covering E2E, integration, and API scenarios
-- ✅ **Enterprise Features** - Admin dashboard, order tracking, product reviews, image uploads
-- ✅ **MCP Server (Agentic AI)** - Tooling interface for AI assistants (product search, catalog stats)
+- ✅ **Agentic Architecture (MCP + RAG + Agent Gateway)** - UI calls one agent endpoint; tools/retrieval are internal services
+- ✅ **Tool-Use Boundary (MCP)** - Product/order capabilities exposed as explicit tools (easy to audit + test)
+- ✅ **Retrieval Boundary (RAG)** - Policy/support answers come from local docs (no vendor lock-in for the demo)
+- ✅ **Modern Full-Stack Backbone** - FastAPI + React 18 foundation with auth, products, orders, uploads, admin UX
+- ✅ **Two Run Modes** - Local “agent demo” (no keys) or full e-commerce stack (Mongo/payments/hybrid search)
+
+## 🧠 Agentic Architecture (The Point of This Repo)
+
+```
+Frontend (React :3000)
+  ↓  (only calls /chat)
+Agent Gateway (FastAPI :7000)
+  ├─ MCP Tool Server (FastAPI :7001)   → products / orders tools
+  └─ RAG Service (FastAPI :7002)       → doc retrieval (TF‑IDF)
+```
+
+### What the agent actually does
+
+- **Intent routing**: “track order …” → MCP tool; “return policy” → RAG
+- **Tool execution**: calls tools like `searchProducts` / `getProduct` / `getOrderStatus`
+- **UI isolation**: frontend never calls MCP/RAG directly (clean separation)
+
+## 🚀 Quickstart (Agentic Demo: Local, No API Keys)
+
+### 1) Start the 3 services
+
+Windows:
+- Run `run_all.bat`
+
+Or run individually:
+- `cd services/mcp_server && python main.py` (7001)
+- `cd services/rag_service && python main.py` (7002)
+- `cd services/agent_gateway && python main.py` (7000)
+
+### 2) Start the frontend
+
+- `cd frontend && npm install`
+- `npm start`
+
+Visit `http://localhost:3000/ai`
+
+### Example prompts to try
+
+- “Show me headphones under $300” (MCP)
+- “Track order ORD-1001” (MCP)
+- “What’s your return policy?” (RAG)
+
+## 🏃 Run Mode: Full E‑Commerce Stack (Optional)
+
+If you want the full storefront API (auth/products/orders/payments) in addition to the agentic demo:
+
+- Backend API: `python -m uvicorn main:app --reload --port 5000`
+- Frontend: `npm start` (same as above)
+
+Docker (full-stack) is available via `docker-compose.yml` (MongoDB + backend + frontend). This mode can be configured with Mongo/OpenAI/Pinecone env vars.
 
 ## ✨ Features
+
+### Agentic AI Features (Primary)
+
+- 🧭 **Agent Gateway** - single `/chat` surface the frontend calls
+- 🧰 **MCP Tools** - product search + product lookup + order status tools
+- 📚 **RAG Service** - doc retrieval for support/policy questions
+- 🧪 **Inspectable Debugging** - health endpoints and tool routing visibility during development
 
 ### User Features
 
@@ -70,7 +125,7 @@ Production-style full-stack e-commerce app built with **FastAPI (Python)**, **Re
 | -------------------- | ------------------- | -------------------------------------------------------------------------- |
 | **FastAPI 0.115.0**  | REST API Framework  | ⚡ Async/await native, auto-generated OpenAPI docs                         |
 | **Beanie ODM**       | MongoDB Integration | 🔄 Async MongoDB operations, Pydantic integration, relationship management |
-| **Pydantic v2**      | Data Validation     | 🛡️ Type-safe validation and serialization                                 |
+| **Pydantic v2**      | Data Validation     | 🛡️ Type-safe validation and serialization                                  |
 | **PyJWT**            | Authentication      | 🔐 JWT token generation/verification with HTTP-only cookie security        |
 | **Passlib + Bcrypt** | Password Security   | 🔒 Industry-standard password hashing with salt rounds                     |
 | **Uvicorn**          | ASGI Server         | 🚀 High-performance async server for production deployments                |
@@ -270,6 +325,7 @@ These hooks are implemented in `frontend/src/hooks/` and re-exported from `front
 ## 🚀 Quick Start
 
 > 📘 **Ports (current defaults):**
+>
 > - **Docker:** Frontend `3000`, Backend `5000`
 > - **Local dev via `start.py`:** Frontend `3000`, Backend `5003`
 
