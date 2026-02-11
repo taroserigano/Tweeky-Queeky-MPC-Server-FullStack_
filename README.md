@@ -1,4 +1,4 @@
-# 🛒 Tweeky-Queeky-Shop: Full-Stack E-Commerce Platform
+# 🛒 Agentic AI E-Commerce Platform - Tweeky-Queeky-Shop
 
 > **Portfolio project showcasing a modern FastAPI + React e-commerce system (Docker-ready, async backend, hybrid search, payments, and admin tooling).**
 
