@@ -1,5 +1,8 @@
 # 🤖 Tweeky-Queeky Shop: Agentic AI E-Commerce Portfolio
 
+<img width="1899" height="1068" alt="image" src="https://github.com/user-attachments/assets/1d2785bc-7e77-4b9d-a34c-7f95339e62fb" />
+
+
 > **Portfolio project focused on agentic AI patterns (tool-use via MCP + retrieval via RAG) wrapped inside a real e-commerce app (FastAPI + React).**
 
 This repo is intentionally **agent-first**:
@@ -51,6 +54,12 @@ Agent Gateway (FastAPI :7000)
   ├─ MCP Tool Server (FastAPI :7001)   → products / orders tools
   └─ RAG Service (FastAPI :7002)       → doc retrieval (TF‑IDF)
 ```
+<img width="1893" height="1068" alt="image" src="https://github.com/user-attachments/assets/23f62181-e26e-4c13-8182-8e8d8a7dde9a" />
+<img width="1898" height="1068" alt="image" src="https://github.com/user-attachments/assets/d3932ae6-318c-4ac0-96f0-8f985f01153f" />
+<img width="1893" height="1074" alt="image" src="https://github.com/user-attachments/assets/a94cfa70-a953-4784-8804-5580b3e47de4" />
+<img width="1897" height="1079" alt="image" src="https://github.com/user-attachments/assets/83686c62-ac2c-4d29-9533-cd97a79588a1" />
+<img width="1903" height="1071" alt="image" src="https://github.com/user-attachments/assets/d36d2417-e335-4ab9-a978-5c06941f162e" />
+<img width="1907" height="1079" alt="image" src="https://github.com/user-attachments/assets/59b31701-633f-42b6-98c0-3acf7e5ee146" />
 
 ### What the agent actually does
 
